@@ -1,0 +1,110 @@
+[
+  {
+    "question": "Which structure lets me read the thousandth element instantly but has to copy everything over when it grows past its capacity?",
+    "ideal_answer": "A dynamic array: O(1) indexed access, but growing past capacity allocates a bigger block and copies the elements.",
+    "gold_doc": "dynamic_arrays.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which sequence type gives constant-time access by position and the best cache locality, but O(n) cost to insert in the middle?",
+    "ideal_answer": "A dynamic array, because elements are contiguous and indexed directly, but middle insertion shifts later elements.",
+    "gold_doc": "dynamic_arrays.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "In which structure can I remove a known element just by rewiring a couple of pointers, even though reaching an arbitrary position is slow?",
+    "ideal_answer": "A linked list: O(1) splice at a known node, but O(n) to reach a position because you must walk from the head.",
+    "gold_doc": "linked_lists.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "In which structure does getting to the k-th element mean walking node by node from the start, following pointers?",
+    "ideal_answer": "A linked list, which has no index arithmetic, so positional access is O(n) by traversing from the head.",
+    "gold_doc": "linked_lists.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which ordered tree gives logarithmic operations only when keys happen to arrive in a balanced order, with no self-balancing of its own?",
+    "ideal_answer": "A plain binary search tree, which keeps the left-smaller/right-larger order but does not rebalance, so skewed input degrades it to O(n).",
+    "gold_doc": "binary_search_trees.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which ordered tree can collapse into a linked-list shape if you insert already-sorted keys into it?",
+    "ideal_answer": "A plain (unbalanced) binary search tree, which becomes skewed and O(n) when keys arrive in sorted order.",
+    "gold_doc": "binary_search_trees.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which tree restores a height-balance condition with rotations after every insertion to guarantee worst-case logarithmic operations?",
+    "ideal_answer": "An AVL tree, a self-balancing BST that rotates to keep subtree heights within one, guaranteeing O(log n).",
+    "gold_doc": "avl_trees.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure stores a balance factor at each node and rebalances itself on updates?",
+    "ideal_answer": "An AVL tree, which tracks each node's balance factor and performs rotations to stay strictly height-balanced.",
+    "gold_doc": "avl_trees.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure only orders each parent against its own children and is used to always serve the highest-priority item next?",
+    "ideal_answer": "A binary heap, which satisfies the heap property between parent and children and implements a priority queue.",
+    "gold_doc": "binary_heaps.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which complete tree is stored compactly in an array and exposes the minimum at its root in constant time?",
+    "ideal_answer": "A binary heap, a complete tree kept in an array where the root is the min (or max), read in O(1).",
+    "gold_doc": "binary_heaps.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which in-place divide-and-conquer sort can fall to quadratic time when the split element is chosen badly?",
+    "ideal_answer": "Quicksort, which partitions around a pivot in place but degrades to O(n^2) on a poor pivot choice.",
+    "gold_doc": "quicksort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which fast average-case sort needs almost no extra memory but does not preserve the order of equal elements?",
+    "ideal_answer": "Quicksort: in-place with O(log n) stack space and O(n log n) average time, but not stable.",
+    "gold_doc": "quicksort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which divide-and-conquer sort keeps equal elements in their original order and needs extra space proportional to the input?",
+    "ideal_answer": "Merge sort, which is stable and uses an O(n) auxiliary array.",
+    "gold_doc": "merge_sort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which sort guarantees n-log-n time even in the worst case, at the cost of an auxiliary array?",
+    "ideal_answer": "Merge sort, which guarantees O(n log n) in all cases but is not in place.",
+    "gold_doc": "merge_sort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "In which collision scheme does each bucket hold a list of all the entries that hashed to it?",
+    "ideal_answer": "Separate chaining, where each bucket holds a linked list of colliding entries.",
+    "gold_doc": "hashing_chaining.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which hashing approach can keep working with a load factor above one and tolerates frequent deletions gracefully?",
+    "ideal_answer": "Separate chaining, whose buckets can hold many entries, so the load factor can exceed one and deletions are easy.",
+    "gold_doc": "hashing_chaining.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which collision scheme stores every entry directly in the table and finds a free slot by probing a sequence?",
+    "ideal_answer": "Open addressing, which probes (linear, quadratic, or double hashing) for an empty slot within the same array.",
+    "gold_doc": "hashing_open_addressing.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which hashing approach needs tombstone markers on deletion and must keep its load factor well below one?",
+    "ideal_answer": "Open addressing, which requires empty slots for probing to terminate and tombstones so probe sequences survive deletion.",
+    "gold_doc": "hashing_open_addressing.pdf",
+    "needs_human_review": true
+  }
+]

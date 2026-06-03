@@ -1,0 +1,59 @@
+# Local one-command stack: Postgres + FastAPI backend + Next.js frontend.
+# Secrets (GROQ_API_KEY, SECRET_KEY) are read from a root .env file via ${VAR}
+# substitution — copy .env.example to .env and fill it in. Data persists in named
+# volumes (Postgres, Chroma, uploads, HuggingFace model cache).
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: studymate
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/studymate
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-prod}
+      ACCESS_TOKEN_EXPIRE_MINUTES: 10080
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+      EMBED_MODEL: BAAI/bge-small-en-v1.5
+      RERANK_MODEL: cross-encoder/ms-marco-MiniLM-L-6-v2
+      CHROMA_DIR: /app/chroma_data
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - chroma:/app/chroma_data
+      - uploads:/app/uploads
+      - hfcache:/root/.cache/huggingface
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Browser-facing API URL; baked into the client bundle at build time.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  chroma:
+  uploads:
+  hfcache:

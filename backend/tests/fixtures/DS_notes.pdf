@@ -1,0 +1,101 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 5 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+5 0 obj
+<< /Length 868 >>
+stream
+BT
+/F1 12 Tf
+72 720 Td
+14 TL
+(Data Structures - Trees: Revision Notes) Tj
+T*
+() Tj
+T*
+(A binary search tree \(BST\) is a binary tree in which every node has at) Tj
+T*
+(most two children. For each node, all keys in the left subtree are less) Tj
+T*
+(than the node's key, and all keys in the right subtree are greater. This) Tj
+T*
+(ordering property makes search, insertion, and deletion efficient.) Tj
+T*
+() Tj
+T*
+(Search in a BST: start at the root and compare the target key with the) Tj
+T*
+(current node. If equal, the search succeeds. If the target is smaller, go) Tj
+T*
+(left; if larger, go right. The average time complexity is O\(log n\) when) Tj
+T*
+(the tree is balanced, but degrades to O\(n\) for a skewed tree.) Tj
+T*
+() Tj
+T*
+(Insertion follows the same path as search until reaching an empty spot,) Tj
+T*
+(where the new node is attached as a leaf.) Tj
+T*
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 7 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+7 0 obj
+<< /Length 701 >>
+stream
+BT
+/F1 12 Tf
+72 720 Td
+14 TL
+(Balanced Trees and Traversals) Tj
+T*
+() Tj
+T*
+(An AVL tree is a self-balancing binary search tree where the heights of) Tj
+T*
+(the two child subtrees of any node differ by at most one. After insertion) Tj
+T*
+(or deletion, rotations restore the balance, guaranteeing O\(log n\) height.) Tj
+T*
+() Tj
+T*
+(Tree traversals visit nodes in a defined order. In-order traversal of a) Tj
+T*
+(BST visits nodes in ascending key order: left subtree, node, right) Tj
+T*
+(subtree. Pre-order visits the node before its subtrees; post-order visits) Tj
+T*
+(the node after its subtrees. Level-order traversal uses a queue to visit) Tj
+T*
+(nodes breadth-first, one level at a time.) Tj
+T*
+ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000191 00000 n 
+0000000317 00000 n 
+0000001236 00000 n 
+0000001362 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+2114
+%%EOF

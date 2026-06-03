@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Secrets
+.env
+backend/.env
+
+# Local data stores
+backend/chroma_data/
+backend/uploads/
+backend/*.db
+backend/studymate.db
+
+# Eval output
+backend/app/eval/results.json
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+frontend/.env.local
+
+# Misc
+.DS_Store
+*.log
+
+# Claude config
+.claude/
+
+# Personal / not part of the project (don't publish to a public repo)
+main.tex
+MNNIT logo.jpg
+Resume_20233367.pdf
