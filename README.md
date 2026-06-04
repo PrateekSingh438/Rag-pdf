@@ -206,16 +206,3 @@ are read live from `results.json`.)*
 
 ---
 
-## Resume bullets
-
-- Built **StudyMate**, a full-stack AI study assistant (FastAPI + Next.js +
-  PostgreSQL) with JWT auth, multi-knowledge-base document management, and
-  streaming chat.
-- Implemented a **RAG pipeline from scratch** — chunking, sentence-transformer
-  embeddings, Chroma vector search, and **cross-encoder reranking** — producing
-  grounded, **cited** answers with an explicit "not found" path to suppress
-  hallucination.
-- Added domain features (concept -> past-exam-question linking, grounded practice
-  questions, interactive quizzes, and exam-frequency insights) and an **evaluation
-  harness** (recall@k, MRR, faithfulness) whose ablation showed reranking improving
-  **MRR from 0.880 to 0.972** and **recall@3 from 0.889 to 0.917**.
