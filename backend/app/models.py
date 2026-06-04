@@ -77,3 +77,11 @@ class QuizAttempt(Base):
     score = Column(Integer)
     total = Column(Integer)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class SiteStat(Base):
+    """Single-row, site-wide counters (e.g. total visits) shown as social proof on
+    the landing page and the profile's community card."""
+    __tablename__ = "site_stats"
+    id = Column(Integer, primary_key=True)
+    visits = Column(Integer, default=0)

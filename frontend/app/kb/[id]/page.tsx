@@ -18,6 +18,7 @@ import { ExamInsightsDialog } from "@/components/ExamInsightsDialog";
 import { StudyInsightsDialog } from "@/components/StudyInsightsDialog";
 import { StudyPlanDialog } from "@/components/StudyPlanDialog";
 import { Card, Spinner } from "@/components/ui";
+import { IconArrowLeft } from "@/components/icons";
 
 export default function KBWorkspacePage() {
   const { token, loading } = useRequireAuth();
@@ -54,8 +55,8 @@ export default function KBWorkspacePage() {
       <NavBar />
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-4">
         <div className="mb-3 flex items-center gap-2 text-sm">
-          <Link href="/dashboard" className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-            ← Dashboard
+          <Link href="/dashboard" className="inline-flex items-center gap-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+            <IconArrowLeft size={15} /> Dashboard
           </Link>
           <span className="text-slate-300">/</span>
           <h1 className="font-semibold text-slate-900 dark:text-slate-100">

@@ -1,18 +1,48 @@
 "use client";
-// Profile & settings — a single scrollable page with four sections:
-// 1) Profile info (name, email, avatar, institution) with a sticky Save bar,
-// 2) Study stats summary + achievement badges, 3) Security (change password),
-// 4) Danger zone (wipe all data, type-to-confirm).
-import { useEffect, useState } from "react";
+// Profile & settings — a single scrollable page:
+// 1) Profile info (name, email, avatar upload, institution) with a sticky Save bar,
+// 2) Study stats summary + achievement badges, 3) Community counters (site-wide),
+// 4) Security (change password), 5) Danger zone (wipe all data, type-to-confirm).
+import { useEffect, useRef, useState } from "react";
 import { useRequireAuth } from "@/lib/auth";
 import * as api from "@/lib/api";
 import { NavBar } from "@/components/NavBar";
 import { Button, Input, Card, Spinner } from "@/components/ui";
+import {
+  IconCamera, IconTrash, IconUsers, IconMessage, IconEye, IconAward,
+  IconFlame, IconLock, IconCheck,
+} from "@/components/icons";
+
+// Read an image File, draw it center-cropped into a square canvas, and return a
+// compressed JPEG data URL. Keeps avatars small enough to store in the DB column
+// (no file server needed — works on ephemeral hosting like HF Spaces).
+function fileToAvatarDataUrl(file: File, size = 256): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Invalid image"));
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas unsupported"));
+        const scale = Math.max(size / img.width, size / img.height);
+        const w = img.width * scale, h = img.height * scale;
+        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 function avatarFor(name: string | null, email: string, picture: string | null) {
   if (picture) return picture;
   const label = encodeURIComponent(name || email);
-  return `https://ui-avatars.com/api/?name=${label}&background=4f46e5&color=fff&size=128`;
+  return `https://ui-avatars.com/api/?name=${label}&background=4f46e5&color=fff&size=256`;
 }
 
 export default function ProfilePage() {
@@ -25,8 +55,10 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);
   const [saveErr, setSaveErr] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [stats, setStats] = useState<api.Stats | null>(null);
+  const [site, setSite] = useState<api.SiteStats | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -38,6 +70,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (token) api.getStats(token).then(setStats).catch(() => {});
+    api.getSiteStats().then(setSite).catch(() => {});
   }, [token]);
 
   if (loading || !token || !user) {
@@ -52,6 +85,20 @@ export default function ProfilePage() {
     name !== (user.name || "") ||
     institution !== (user.institution || "") ||
     picture !== (user.picture || "");
+
+  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    setSaveErr(null);
+    if (!file.type.startsWith("image/")) return setSaveErr("Please choose an image file.");
+    if (file.size > 8 * 1024 * 1024) return setSaveErr("Image is too large (max 8 MB).");
+    try {
+      setPicture(await fileToAvatarDataUrl(file));
+    } catch (err) {
+      setSaveErr(err instanceof Error ? err.message : "Could not process image");
+    }
+  }
 
   async function saveProfile() {
     if (!token) return;
@@ -74,32 +121,47 @@ export default function ProfilePage() {
     <>
       <NavBar />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 pb-24">
-        <h1 className="mb-6 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+        <h1 className="mb-6 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
           Profile &amp; settings
         </h1>
 
         {/* 1. Profile info */}
         <Section title="Profile">
           <div className="flex flex-col gap-5 sm:flex-row">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={avatarFor(name, user.email, picture)}
-              alt="avatar"
-              className="h-20 w-20 shrink-0 rounded-full border border-slate-200 dark:border-slate-700"
-            />
+            <div className="flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="group relative h-24 w-24 overflow-hidden rounded-full border border-slate-200 dark:border-slate-700"
+                title="Upload a new photo"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={avatarFor(name, user.email, picture)} alt="avatar" className="h-full w-full object-cover" />
+                <span className="absolute inset-0 grid place-items-center bg-slate-900/0 text-white opacity-0 transition-all group-hover:bg-slate-900/50 group-hover:opacity-100">
+                  <IconCamera size={22} />
+                </span>
+              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => fileRef.current?.click()} className="text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                  Upload
+                </button>
+                {picture && (
+                  <>
+                    <span className="text-slate-300 dark:text-slate-600">·</span>
+                    <button onClick={() => setPicture("")} className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-red-600">
+                      <IconTrash size={12} /> Remove
+                    </button>
+                  </>
+                )}
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickFile} />
+            </div>
             <div className="flex-1 space-y-4">
               <Field label="Display name">
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
               </Field>
               <Field label="Email (read-only)">
                 <Input value={user.email} disabled className="opacity-60" />
-              </Field>
-              <Field label="Avatar image URL (optional — initials are used otherwise)">
-                <Input
-                  value={picture}
-                  onChange={(e) => setPicture(e.target.value)}
-                  placeholder="https://…/avatar.png"
-                />
               </Field>
               <Field label="Institution / course">
                 <Input
@@ -123,8 +185,8 @@ export default function ProfilePage() {
                 <Stat label="Documents" value={stats.documents_uploaded} />
                 <Stat label="Quizzes taken" value={stats.quizzes_taken} />
                 <Stat label="Best quiz score" value={`${stats.highest_score_pct}%`} />
-                <Stat label="Longest streak" value={`${stats.longest_streak}🔥`} />
-                <Stat label="Current streak" value={`${stats.current_streak}🔥`} />
+                <Stat label="Longest streak" value={stats.longest_streak} icon={IconFlame} />
+                <Stat label="Current streak" value={stats.current_streak} icon={IconFlame} />
               </div>
               <p className="mt-3 text-xs text-slate-400">
                 Member since {new Date(stats.member_since).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
@@ -139,9 +201,9 @@ export default function ProfilePage() {
                       <span
                         key={b.name}
                         title={b.description}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-200"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-300"
                       >
-                        <span>{b.emoji}</span> {b.name}
+                        <IconAward size={14} /> {b.name}
                       </span>
                     ))}
                   </div>
@@ -151,12 +213,22 @@ export default function ProfilePage() {
           )}
         </Section>
 
-        {/* 3. Security */}
+        {/* 3. Community */}
+        <Section title="Community">
+          <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">You&apos;re part of a growing community of learners.</p>
+          <div className="grid grid-cols-3 gap-3">
+            <Community icon={IconUsers} label="Learners" value={site?.total_users} />
+            <Community icon={IconMessage} label="Questions answered" value={site?.total_questions} />
+            <Community icon={IconEye} label="Site visits" value={site?.total_visits} />
+          </div>
+        </Section>
+
+        {/* 4. Security */}
         <Section title="Security">
           <ChangePasswordForm token={token} />
         </Section>
 
-        {/* 4. Danger zone */}
+        {/* 5. Danger zone */}
         <Section title="Danger zone" danger>
           <DangerZone token={token} onDeleted={() => api.getStats(token).then(setStats).catch(() => {})} />
         </Section>
@@ -166,7 +238,7 @@ export default function ProfilePage() {
       <div className="sticky bottom-0 z-10 border-t border-slate-200 bg-white/90 backdrop-blur dark:border-slate-700 dark:bg-slate-900/90">
         <div className="mx-auto flex max-w-3xl items-center justify-end gap-3 px-4 py-3">
           {saveErr && <span className="text-sm text-red-600">{saveErr}</span>}
-          {savedMsg && <span className="text-sm text-emerald-600 dark:text-emerald-400">Saved ✓</span>}
+          {savedMsg && <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400"><IconCheck size={15} /> Saved</span>}
           <Button onClick={saveProfile} disabled={saving || !dirty}>
             {saving ? <Spinner className="border-white/40 border-t-white" /> : "Save changes"}
           </Button>
@@ -196,11 +268,23 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
+function Stat({ label, value, icon: Icon }: { label: string; value: string | number; icon?: React.ComponentType<{ size?: number; className?: string }> }) {
   return (
     <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
       <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{value}</p>
+      <p className="mt-1 flex items-center gap-1.5 text-xl font-semibold text-slate-900 dark:text-slate-100">
+        {value}{Icon && <Icon size={18} className="text-orange-500" />}
+      </p>
+    </div>
+  );
+}
+
+function Community({ icon: Icon, label, value }: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; value: number | undefined }) {
+  return (
+    <div className="rounded-lg border border-slate-200 p-3 text-center dark:border-slate-700">
+      <Icon size={20} className="mx-auto mb-1.5 text-indigo-500" />
+      <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">{value === undefined ? "—" : value.toLocaleString()}</p>
+      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{label}</p>
     </div>
   );
 }
@@ -219,7 +303,7 @@ function ChangePasswordForm({ token }: { token: string }) {
     setBusy(true);
     try {
       await api.changePassword(token, cur, next);
-      setMsg({ ok: true, text: "Password changed ✓" });
+      setMsg({ ok: true, text: "Password changed" });
       setCur(""); setNext(""); setConfirm("");
     } catch (e) {
       setMsg({ ok: false, text: e instanceof Error ? e.message : "Failed" });
@@ -233,9 +317,9 @@ function ChangePasswordForm({ token }: { token: string }) {
       <Input type="password" placeholder="Current password" value={cur} onChange={(e) => setCur(e.target.value)} />
       <Input type="password" placeholder="New password" value={next} onChange={(e) => setNext(e.target.value)} />
       <Input type="password" placeholder="Confirm new password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
-      {msg && <p className={`text-sm ${msg.ok ? "text-emerald-600 dark:text-emerald-400" : "text-red-600"}`}>{msg.text}</p>}
+      {msg && <p className={`flex items-center gap-1 text-sm ${msg.ok ? "text-emerald-600 dark:text-emerald-400" : "text-red-600"}`}>{msg.ok && <IconCheck size={15} />}{msg.text}</p>}
       <Button onClick={submit} disabled={busy || !cur || !next}>
-        {busy ? <Spinner className="border-white/40 border-t-white" /> : "Change password"}
+        {busy ? <Spinner className="border-white/40 border-t-white" /> : <><IconLock size={16} /> Change password</>}
       </Button>
       <p className="text-xs text-slate-400">If you signed up with Google, you don&apos;t have a password to change.</p>
     </div>
@@ -268,7 +352,7 @@ function DangerZone({ token, onDeleted }: { token: string; onDeleted: () => void
       </p>
       {done && <p className="mb-3 text-sm text-emerald-600 dark:text-emerald-400">All your data has been deleted.</p>}
       <Button variant="danger" className="border border-red-300 dark:border-red-800" onClick={() => setOpen(true)}>
-        Delete all my data
+        <IconTrash size={16} /> Delete all my data
       </Button>
 
       {open && (

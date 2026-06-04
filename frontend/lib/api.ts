@@ -270,6 +270,24 @@ export interface Stats {
 }
 export const getStats = (token: string) => req<Stats>("/stats", token);
 
+// ---- Site-wide counters (public; powers social proof + profile community card) ----
+export interface SiteStats {
+  total_users: number;
+  total_questions: number;
+  total_documents: number;
+  total_visits: number;
+}
+export const getSiteStats = () => req<SiteStats>("/stats/site", null);
+// Counts a visit (deduped client-side to once per browser-day) and returns counts.
+export async function recordVisit(): Promise<SiteStats> {
+  const key = "sm_visit_day";
+  const today = new Date().toISOString().slice(0, 10);
+  const fresh = typeof window !== "undefined" && localStorage.getItem(key) !== today;
+  if (typeof window !== "undefined") localStorage.setItem(key, today);
+  if (fresh) return req<SiteStats>("/stats/visit", null, { method: "POST" });
+  return getSiteStats();
+}
+
 export const recordQuizAttempt = (
   token: string,
   kbId: number,

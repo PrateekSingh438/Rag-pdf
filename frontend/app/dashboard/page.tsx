@@ -1,13 +1,18 @@
 "use client";
 // Home dashboard: a greeting, a progress stat strip (streak / questions / quizzes /
 // documents), "jump back in" recent activity, "focus areas" (weak topics), and the
-// list of knowledge bases with create + one-click demo onboarding.
-import { useEffect, useState, useCallback } from "react";
+// list of knowledge bases with create + one-click demo onboarding. Icons are
+// line-style SVGs (see icons.tsx) — no emoji.
+import { useEffect, useState, useCallback, ComponentType } from "react";
 import Link from "next/link";
 import { useRequireAuth } from "@/lib/auth";
 import * as api from "@/lib/api";
 import { NavBar } from "@/components/NavBar";
 import { Button, Input, Card, Spinner } from "@/components/ui";
+import {
+  IconFlame, IconMessage, IconClipboard, IconBook, IconSparkles,
+  IconArrowRight, IconTarget, IconTrash, IconPlus,
+} from "@/components/icons";
 
 export default function DashboardPage() {
   const { token, user, loading } = useRequireAuth();
@@ -85,8 +90,8 @@ export default function DashboardPage() {
       <NavBar />
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-            Welcome back{firstName ? `, ${firstName}` : ""} 👋
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+            Welcome back{firstName ? `, ${firstName}` : ""}
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Your study companion — pick up where you left off, or start a new course.
@@ -95,10 +100,10 @@ export default function DashboardPage() {
 
         {/* Stats strip */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard emoji="🔥" label="Day streak" value={stats?.current_streak ?? 0} />
-          <StatCard emoji="❓" label="Questions asked" value={stats?.questions_asked ?? 0} />
-          <StatCard emoji="📋" label="Quizzes taken" value={stats?.quizzes_taken ?? 0} />
-          <StatCard emoji="📚" label="Documents" value={stats?.documents_uploaded ?? 0} />
+          <StatCard icon={IconFlame} tint="orange" label="Day streak" value={stats?.current_streak ?? 0} />
+          <StatCard icon={IconMessage} tint="indigo" label="Questions asked" value={stats?.questions_asked ?? 0} />
+          <StatCard icon={IconClipboard} tint="violet" label="Quizzes taken" value={stats?.quizzes_taken ?? 0} />
+          <StatCard icon={IconBook} tint="emerald" label="Documents" value={stats?.documents_uploaded ?? 0} />
         </div>
 
         {/* Recent + weak topics */}
@@ -107,22 +112,23 @@ export default function DashboardPage() {
             {stats.recent.length > 0 && (
               <Card className="p-5">
                 <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Jump back in</h2>
-                <ul className="space-y-2">
+                <ul className="space-y-1">
                   {stats.recent.slice(0, 5).map((r, i) => {
+                    const Icon = r.kind === "quiz" ? IconClipboard : IconMessage;
                     const inner = (
-                      <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                        <span>{r.kind === "quiz" ? "📋" : "💬"}</span>
+                      <span className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300">
+                        <Icon size={16} className="shrink-0 text-slate-400" />
                         <span className="truncate">{r.title}</span>
                       </span>
                     );
                     return (
                       <li key={i}>
                         {r.kb_id ? (
-                          <Link href={`/kb/${r.kb_id}`} className="block rounded px-1 py-0.5 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                          <Link href={`/kb/${r.kb_id}`} className="block rounded-md px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800/60">
                             {inner}
                           </Link>
                         ) : (
-                          inner
+                          <div className="px-2 py-1.5">{inner}</div>
                         )}
                       </li>
                     );
@@ -132,8 +138,10 @@ export default function DashboardPage() {
             )}
             {stats.weak_topics.length > 0 && (
               <Card className="p-5">
-                <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Focus areas</h2>
-                <p className="mb-2 text-xs text-slate-400">Topics with your lowest quiz scores</p>
+                <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  <IconTarget size={16} className="text-rose-500" /> Focus areas
+                </h2>
+                <p className="mb-3 text-xs text-slate-400">Topics with your lowest quiz scores</p>
                 <ul className="space-y-2">
                   {stats.weak_topics.map((w, i) => (
                     <li key={i} className="flex items-center justify-between text-sm">
@@ -160,10 +168,10 @@ export default function DashboardPage() {
               onKeyDown={(e) => e.key === "Enter" && createKb()}
             />
             <Button onClick={createKb} disabled={creating || !name.trim()} className="sm:w-36">
-              {creating ? <Spinner className="border-white/40 border-t-white" /> : "Create"}
+              {creating ? <Spinner className="border-white/40 border-t-white" /> : <><IconPlus size={16} /> Create</>}
             </Button>
-            <Button variant="secondary" onClick={addDemo} disabled={seeding} className="sm:w-44">
-              {seeding ? <Spinner /> : "✨ Try a sample course"}
+            <Button variant="secondary" onClick={addDemo} disabled={seeding} className="sm:w-48">
+              {seeding ? <Spinner /> : <><IconSparkles size={16} /> Try a sample course</>}
             </Button>
           </div>
         </Card>
@@ -175,29 +183,32 @@ export default function DashboardPage() {
             <Spinner />
           </div>
         ) : kbs.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-300 py-16 text-center text-slate-500 dark:border-slate-700 dark:text-slate-400">
-            <p>No knowledge bases yet.</p>
-            <p className="mt-1 text-sm">Create one above, or click <strong>Try a sample course</strong> to explore with demo content.</p>
+          <div className="rounded-xl border border-dashed border-slate-300 py-16 text-center dark:border-slate-700">
+            <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800">
+              <IconBook size={24} />
+            </div>
+            <p className="text-slate-600 dark:text-slate-300">No knowledge bases yet.</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Create one above, or click <strong>Try a sample course</strong> to explore with demo content.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {kbs.map((kb) => (
-              <Card key={kb.id} className="group flex flex-col p-5 transition-shadow hover:shadow-md">
+              <Card key={kb.id} className="group flex flex-col p-5 transition-all hover:border-indigo-200 hover:shadow-md dark:hover:border-indigo-900">
                 <Link href={`/kb/${kb.id}`} className="flex-1">
-                  <div className="mb-2 flex items-center gap-2">
-                    <span className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300">
-                      📚
+                  <div className="mb-2 flex items-center gap-2.5">
+                    <span className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+                      <IconBook size={18} />
                     </span>
-                    <h3 className="text-lg font-semibold text-slate-900 group-hover:text-indigo-600 dark:text-slate-100">{kb.name}</h3>
+                    <h3 className="text-lg font-semibold text-slate-900 group-hover:text-indigo-600 dark:text-slate-100 dark:group-hover:text-indigo-400">{kb.name}</h3>
                   </div>
                   <p className="text-xs text-slate-400">Created {new Date(kb.created_at).toLocaleDateString()}</p>
                 </Link>
-                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-700">
-                  <Link href={`/kb/${kb.id}`} className="text-sm font-medium text-indigo-600 hover:underline">
-                    Open workspace →
+                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
+                  <Link href={`/kb/${kb.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:gap-1.5 dark:text-indigo-400">
+                    Open workspace <IconArrowRight size={15} />
                   </Link>
-                  <button onClick={() => removeKb(kb.id)} className="text-sm text-slate-400 hover:text-red-600">
-                    Delete
+                  <button onClick={() => removeKb(kb.id)} title="Delete" className="grid h-8 w-8 place-items-center rounded-md text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50">
+                    <IconTrash size={16} />
                   </button>
                 </div>
               </Card>
@@ -209,13 +220,22 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ emoji, label, value }: { emoji: string; label: string; value: number }) {
+const TINTS: Record<string, string> = {
+  orange: "bg-orange-50 text-orange-600 dark:bg-orange-950/50 dark:text-orange-400",
+  indigo: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400",
+  violet: "bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400",
+  emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400",
+};
+
+function StatCard({ icon: Icon, tint, label, value }: { icon: ComponentType<{ size?: number }>; tint: string; label: string; value: number }) {
   return (
     <Card className="flex items-center gap-3 p-4">
-      <span className="text-2xl">{emoji}</span>
-      <div>
+      <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg ${TINTS[tint]}`}>
+        <Icon size={20} />
+      </span>
+      <div className="min-w-0">
         <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{value}</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+        <p className="truncate text-xs text-slate-500 dark:text-slate-400">{label}</p>
       </div>
     </Card>
   );

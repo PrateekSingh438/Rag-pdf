@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import * as api from "@/lib/api";
 import { Citation } from "@/lib/api";
 import { Badge, Spinner } from "./ui";
+import { IconX } from "./icons";
 
 export function CitationDrawer({
   citation,
@@ -62,8 +63,8 @@ export function CitationDrawer({
                 </span>
                 <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Source detail</h2>
               </div>
-              <button onClick={onClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700">
-                ✕
+              <button onClick={onClose} title="Close" className="grid h-8 w-8 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700">
+                <IconX size={16} />
               </button>
             </div>
 

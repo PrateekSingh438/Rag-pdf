@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import * as api from "@/lib/api";
 import { StudyTopic } from "@/lib/api";
 import { Spinner } from "./ui";
+import { IconTarget, IconX } from "./icons";
 
 const IMP_STYLE: Record<string, string> = {
   high: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
@@ -53,13 +54,15 @@ export function StudyInsightsDialog({
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
           <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">🎯 Key topics</h2>
+            <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+              <IconTarget size={18} className="text-indigo-500" /> Key topics
+            </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Highest-yield topics across your notes &amp; exams — what to study first
             </p>
           </div>
-          <button onClick={onClose} className="rounded p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
-            ✕
+          <button onClick={onClose} title="Close" className="grid h-8 w-8 place-items-center rounded text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+            <IconX size={16} />
           </button>
         </div>
 

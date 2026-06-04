@@ -7,6 +7,10 @@ import * as api from "@/lib/api";
 import { ChatMessage, Citation } from "@/lib/api";
 import { MessageBubble } from "./MessageBubble";
 import { Button, Spinner } from "./ui";
+import {
+  IconTarget, IconCalendar, IconSparkles, IconClipboard, IconChart,
+  IconPlus, IconX, IconChevronDown, IconSend,
+} from "./icons";
 
 export function ChatPanel({
   token,
@@ -29,11 +33,11 @@ export function ChatPanel({
 }) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const tools = [
-    { label: "🎯 Key topics", fn: onOpenStudyInsights },
-    { label: "📅 Study plan", fn: onOpenStudyPlan },
-    { label: "✨ Practice questions", fn: onOpenPractice },
-    { label: "📋 Quiz", fn: onOpenQuiz },
-    { label: "📊 Exam insights", fn: onOpenExamInsights },
+    { label: "Key topics", icon: IconTarget, fn: onOpenStudyInsights },
+    { label: "Study plan", icon: IconCalendar, fn: onOpenStudyPlan },
+    { label: "Practice questions", icon: IconSparkles, fn: onOpenPractice },
+    { label: "Quiz", icon: IconClipboard, fn: onOpenQuiz },
+    { label: "Exam insights", icon: IconChart, fn: onOpenExamInsights },
   ];
   const [conversations, setConversations] = useState<api.ConversationMeta[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -141,7 +145,7 @@ export function ChatPanel({
       <div className="hidden w-56 shrink-0 flex-col border-r border-slate-200 dark:border-slate-700 md:flex">
         <div className="p-3">
           <Button onClick={newChat} className="w-full" variant="secondary">
-            + New chat
+            <IconPlus size={16} /> New chat
           </Button>
         </div>
         <div className="scroll-thin flex-1 space-y-1 overflow-y-auto px-2 pb-2">
@@ -158,9 +162,10 @@ export function ChatPanel({
               <span className="truncate">{c.title}</span>
               <button
                 onClick={(e) => removeConversation(c.id, e)}
-                className="ml-1 shrink-0 text-slate-300 opacity-0 hover:text-red-600 group-hover:opacity-100"
+                title="Delete conversation"
+                className="ml-1 grid h-6 w-6 shrink-0 place-items-center rounded text-slate-300 opacity-0 hover:text-red-600 group-hover:opacity-100"
               >
-                ✕
+                <IconX size={14} />
               </button>
             </div>
           ))}
@@ -176,22 +181,23 @@ export function ChatPanel({
           <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Chat</h2>
           <div className="relative">
             <Button variant="secondary" onClick={() => setToolsOpen((o) => !o)}>
-              Study tools ▾
+              <IconSparkles size={16} /> Study tools
+              <IconChevronDown size={15} className={`transition-transform ${toolsOpen ? "rotate-180" : ""}`} />
             </Button>
             {toolsOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setToolsOpen(false)} />
                 <div className="absolute right-0 z-20 mt-1 w-48 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-                  {tools.map((t) => (
+                  {tools.map(({ label, icon: Icon, fn }) => (
                     <button
-                      key={t.label}
+                      key={label}
                       onClick={() => {
                         setToolsOpen(false);
-                        t.fn();
+                        fn();
                       }}
-                      className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700"
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700"
                     >
-                      {t.label}
+                      <Icon size={16} className="text-indigo-500" /> {label}
                     </button>
                   ))}
                 </div>
@@ -226,7 +232,7 @@ export function ChatPanel({
               className="max-h-32 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-slate-900 outline-none dark:text-slate-100"
             />
             <Button onClick={send} disabled={sending || !input.trim()}>
-              {sending ? <Spinner className="border-white/40 border-t-white" /> : "Send"}
+              {sending ? <Spinner className="border-white/40 border-t-white" /> : <><IconSend size={16} /> Send</>}
             </Button>
           </div>
         </div>

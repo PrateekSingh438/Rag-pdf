@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import * as api from "@/lib/api";
 import { ExamTopic } from "@/lib/api";
 import { Spinner } from "./ui";
+import { IconChart, IconX } from "./icons";
 
 export function ExamInsightsDialog({
   token,
@@ -48,11 +49,13 @@ export function ExamInsightsDialog({
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
           <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">📊 Exam insights</h2>
+            <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+              <IconChart size={18} className="text-indigo-500" /> Exam insights
+            </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">Most frequently tested topics in your uploaded papers</p>
           </div>
-          <button onClick={onClose} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700">
-            ✕
+          <button onClick={onClose} title="Close" className="grid h-8 w-8 place-items-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700">
+            <IconX size={16} />
           </button>
         </div>
 

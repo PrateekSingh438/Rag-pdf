@@ -4,7 +4,8 @@
 // so the user watches status flip processing -> ready.
 import { useEffect, useState, useCallback, useRef, DragEvent } from "react";
 import * as api from "@/lib/api";
-import { Button, StatusBadge, Spinner } from "./ui";
+import { StatusBadge, Spinner } from "./ui";
+import { IconUpload, IconRefresh, IconX } from "./icons";
 
 export function DocumentsPanel({
   token,
@@ -131,8 +132,9 @@ export function DocumentsPanel({
             <Spinner /> Uploading…
           </span>
         ) : (
-          <span className="text-slate-500">
-            Drop a <span className="font-medium capitalize text-indigo-600">{docType}</span> PDF here, or click to browse
+          <span className="inline-flex flex-col items-center gap-1.5 text-slate-500">
+            <IconUpload size={22} className="text-slate-400" />
+            <span>Drop a <span className="font-medium capitalize text-indigo-600">{docType}</span> PDF here, or click to browse</span>
           </span>
         )}
       </div>
@@ -168,18 +170,18 @@ export function DocumentsPanel({
                 {d.status === "failed" && (
                   <button
                     onClick={() => retry(d.id)}
-                    className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800"
                     title="Retry ingestion (re-extract & re-embed this PDF)"
                   >
-                    ↻ Retry
+                    <IconRefresh size={13} /> Retry
                   </button>
                 )}
                 <button
                   onClick={() => remove(d.id)}
-                  className="text-slate-300 hover:text-red-600"
+                  className="grid h-7 w-7 place-items-center rounded text-slate-300 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50"
                   title="Delete document"
                 >
-                  ✕
+                  <IconX size={15} />
                 </button>
               </div>
             </div>

@@ -8,11 +8,43 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..auth import get_current_user
-from ..models import User, KnowledgeBase, Document, Conversation, Message, QuizAttempt
+from ..models import User, KnowledgeBase, Document, Conversation, Message, QuizAttempt, SiteStat
 from ..schemas import (StatsResponse, Badge, WeakTopic, RecentItem,
                        QuizAttemptCreate)
 
 router = APIRouter(prefix="/stats", tags=["stats"])
+
+
+def _site_payload(db: Session) -> dict:
+    """Site-wide counters used for social proof. total_questions counts user-asked
+    messages across all conversations; visits live in the single SiteStat row."""
+    row = db.query(SiteStat).first()
+    return {
+        "total_users": db.query(User).count(),
+        "total_questions": db.query(Message).filter(Message.role == "user").count(),
+        "total_documents": db.query(Document).count(),
+        "total_visits": (row.visits if row else 0),
+    }
+
+
+@router.get("/site")
+def site_stats(db: Session = Depends(get_db)):
+    """Public — no auth. Powers the landing-page social proof + profile community card."""
+    return _site_payload(db)
+
+
+@router.post("/visit")
+def record_visit(db: Session = Depends(get_db)):
+    """Public — increments the visit counter once per call (frontend dedupes per
+    browser-day) and returns the fresh counts."""
+    row = db.query(SiteStat).first()
+    if not row:
+        row = SiteStat(visits=0)
+        db.add(row)
+        db.flush()
+    row.visits = (row.visits or 0) + 1
+    db.commit()
+    return _site_payload(db)
 
 
 def _streaks(active_days: set[date]) -> tuple[int, int]:

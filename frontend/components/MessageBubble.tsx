@@ -5,6 +5,7 @@
 import { Fragment } from "react";
 import { ChatMessage, Citation } from "@/lib/api";
 import { MarkdownMessage } from "./MarkdownMessage";
+import { IconFile } from "./icons";
 
 function renderWithCitations(
   content: string,
@@ -87,8 +88,8 @@ export function MessageBubble({
 
         {examLinks.length > 0 && (
           <div className="rounded-lg border border-purple-200 bg-purple-50 p-3 dark:border-purple-900 dark:bg-purple-950/40">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-300">
-              📝 Appeared in your exams
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-300">
+              <IconFile size={14} /> Appeared in your exams
             </p>
             <ul className="space-y-2">
               {examLinks.map((e, i) => (

@@ -5,6 +5,7 @@ import { useState } from "react";
 import * as api from "@/lib/api";
 import { StudyPlanDay } from "@/lib/api";
 import { Button, Input, Spinner } from "./ui";
+import { IconCalendar, IconX } from "./icons";
 
 export function StudyPlanDialog({
   token,
@@ -52,9 +53,11 @@ export function StudyPlanDialog({
         className="flex max-h-[88vh] w-full max-w-2xl flex-col rounded-xl bg-white shadow-xl dark:bg-slate-800"
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
-          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">📅 Study plan</h2>
-          <button onClick={onClose} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700">
-            ✕
+          <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+            <IconCalendar size={18} className="text-indigo-500" /> Study plan
+          </h2>
+          <button onClick={onClose} title="Close" className="grid h-8 w-8 place-items-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700">
+            <IconX size={16} />
           </button>
         </div>
 
