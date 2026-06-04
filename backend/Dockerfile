@@ -5,6 +5,13 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# System libs needed by OpenCV (pulled in by rapidocr-onnxruntime for the OCR
+# fallback on scanned PDFs). Without these, `import cv2` fails and scanned
+# documents get marked "failed". libgl1 -> libGL.so.1; libglib2.0-0 -> libgthread.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install Python deps first for better layer caching.
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
