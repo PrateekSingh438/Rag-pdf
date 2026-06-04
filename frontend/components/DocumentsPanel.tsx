@@ -122,7 +122,7 @@ export function DocumentsPanel({
         <input
           ref={inputRef}
           type="file"
-          accept="application/pdf"
+          accept="application/pdf,image/jpeg,image/png,image/webp"
           multiple
           className="hidden"
           onChange={(e) => upload(e.target.files)}
@@ -134,7 +134,8 @@ export function DocumentsPanel({
         ) : (
           <span className="inline-flex flex-col items-center gap-1.5 text-slate-500">
             <IconUpload size={22} className="text-slate-400" />
-            <span>Drop a <span className="font-medium capitalize text-indigo-600">{docType}</span> PDF here, or click to browse</span>
+            <span>Drop a <span className="font-medium capitalize text-indigo-600">{docType}</span> PDF or image here, or click to browse</span>
+            <span className="text-xs text-slate-400">PDF, JPG, PNG — scanned pages &amp; photos are OCR&apos;d automatically</span>
           </span>
         )}
       </div>

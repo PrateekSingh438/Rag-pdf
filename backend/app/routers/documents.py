@@ -43,8 +43,10 @@ async def upload_document(
     _owned_kb_or_404(kb_id, user, db)
     if doc_type not in ("notes", "exam"):
         raise HTTPException(status_code=400, detail="doc_type must be 'notes' or 'exam'")
-    if not (file.filename or "").lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    # Accept PDFs and common image formats (photos of notes are OCR'd on ingest).
+    if not (file.filename or "").lower().endswith((".pdf", ".jpg", ".jpeg", ".png", ".webp")):
+        raise HTTPException(status_code=400,
+                            detail="Only PDF or image files (JPG, PNG, WEBP) are supported")
 
     # Create the row first so we have an id to build a stable file path.
     doc = Document(filename=os.path.basename(file.filename), doc_type=doc_type,
