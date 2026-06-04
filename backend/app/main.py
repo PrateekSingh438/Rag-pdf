@@ -15,6 +15,7 @@ from .routers import eval as eval_router
 from .routers import quiz as quiz_router
 from .routers import insights as insights_router
 from .routers import stats as stats_router
+from .routers import models as models_router
 
 
 @asynccontextmanager
@@ -45,6 +46,7 @@ app.include_router(eval_router.router)
 app.include_router(quiz_router.router)
 app.include_router(insights_router.router)
 app.include_router(stats_router.router)
+app.include_router(models_router.router)
 
 
 @app.get("/health", tags=["health"])

@@ -296,6 +296,15 @@ export const recordQuizAttempt = (
   total: number,
 ) => req<{ ok: boolean }>("/stats/quiz-attempts", token, jsonBody({ kb_id: kbId, topic, score, total }));
 
+// ---- Models (LLM picker) ----
+export interface ModelInfo {
+  id: string;
+  label: string;
+  description: string;
+}
+export const getModels = () =>
+  req<{ default: string; models: ModelInfo[] }>("/models", null);
+
 // ---- Streaming chat (SSE) ----
 export async function streamChat(
   kbId: number,
@@ -304,11 +313,12 @@ export async function streamChat(
   conversationId: number | null,
   onToken: (t: string) => void,
   onDone: (m: { conversation_id: number; citations: Citation[]; exam_links: ExamLink[] }) => void,
+  model?: string,
 ) {
   const res = await fetch(`${API}/chat/${kbId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ question, conversation_id: conversationId }),
+    body: JSON.stringify({ question, conversation_id: conversationId, model }),
   });
   if (!res.ok || !res.body) throw new Error(`Chat failed (${res.status})`);
   const reader = res.body.getReader();

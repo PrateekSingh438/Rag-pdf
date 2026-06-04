@@ -110,64 +110,123 @@ body {
 .md em {
   font-style: italic;
 }
+.md a {
+  color: #4f46e5;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.md a:hover {
+  color: #4338ca;
+}
+.md li::marker {
+  color: #94a3b8;
+}
 .md code {
-  background: #f1f5f9;
-  padding: 0.1rem 0.3rem;
-  border-radius: 0.25rem;
+  background: #eef1f6;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.3rem;
   font-size: 0.85em;
+  border: 1px solid #e2e8f0;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
 }
 .md pre {
   background: #0f172a;
   color: #e2e8f0;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.6rem;
+  border: 1px solid #1e293b;
   overflow-x: auto;
-  margin: 0.5rem 0;
+  margin: 0.65rem 0;
+  line-height: 1.55;
 }
 .md pre code {
   background: transparent;
   padding: 0;
+  border: 0;
   color: inherit;
+  font-size: 0.85em;
 }
 .md blockquote {
-  border-left: 3px solid #cbd5e1;
-  padding-left: 0.75rem;
+  border-left: 3px solid #818cf8;
+  background: #f5f6ff;
+  padding: 0.4rem 0.85rem;
+  border-radius: 0 0.4rem 0.4rem 0;
   color: #475569;
-  margin: 0.5rem 0;
+  margin: 0.65rem 0;
 }
+/* Tables render in a rounded, scrollable frame with a tinted header row. */
 .md table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
   border-collapse: collapse;
-  margin: 0.5rem 0;
+  margin: 0.65rem 0;
   font-size: 0.85em;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+}
+.md thead {
+  background: #f1f5f9;
 }
 .md th,
 .md td {
   border: 1px solid #e2e8f0;
-  padding: 0.3rem 0.5rem;
+  padding: 0.4rem 0.7rem;
   text-align: left;
+}
+.md th {
+  font-weight: 600;
+  color: #334155;
+}
+.md tbody tr:nth-child(even) {
+  background: #f8fafc;
 }
 .md hr {
   border: 0;
   border-top: 1px solid #e2e8f0;
-  margin: 0.75rem 0;
+  margin: 0.9rem 0;
 }
 
 /* Dark-mode tweaks for rendered markdown. */
 .dark .md {
   color: #cbd5e1;
 }
+.dark .md a {
+  color: #a5b4fc;
+}
+.dark .md a:hover {
+  color: #c7d2fe;
+}
 .dark .md code {
   background: #1e293b;
+  border-color: #334155;
   color: #e2e8f0;
 }
+.dark .md pre {
+  background: #020617;
+  border-color: #1e293b;
+}
 .dark .md blockquote {
-  border-left-color: #475569;
+  border-left-color: #6366f1;
+  background: #1e1b4b33;
   color: #94a3b8;
+}
+.dark .md table {
+  border-color: #334155;
+}
+.dark .md thead {
+  background: #1e293b;
+}
+.dark .md th {
+  color: #e2e8f0;
 }
 .dark .md th,
 .dark .md td {
   border-color: #334155;
+}
+.dark .md tbody tr:nth-child(even) {
+  background: #0f172a66;
 }
 .dark .scroll-thin::-webkit-scrollbar-thumb {
   background: #475569;

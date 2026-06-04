@@ -46,6 +46,7 @@ def chat(kb_id: int, payload: dict, db: Session = Depends(get_db),
     if not question:
         raise HTTPException(400, "question is required")
     conversation_id = payload.get("conversation_id")
+    model = payload.get("model")  # optional LLM override; validated in chat_stream
 
     # Load prior turns for multi-turn context. For a short follow-up (likely a
     # reference like "explain that again"), fold the previous question into the
@@ -71,7 +72,7 @@ def chat(kb_id: int, payload: dict, db: Session = Depends(get_db),
     def stream():
         full = ""
         try:
-            for tok in chat_stream(messages):
+            for tok in chat_stream(messages, model=model):
                 full += tok
                 yield f"data: {json.dumps({'type': 'token', 'content': tok})}\n\n"
         except Exception as e:

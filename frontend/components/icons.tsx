@@ -300,3 +300,12 @@ export function IconSend(p: IconProps) {
     </Svg>
   );
 }
+
+export function IconCpu(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+      <path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2" />
+    </Svg>
+  );
+}

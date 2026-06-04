@@ -9,8 +9,10 @@ import { MessageBubble } from "./MessageBubble";
 import { Button, Spinner } from "./ui";
 import {
   IconTarget, IconCalendar, IconSparkles, IconClipboard, IconChart,
-  IconPlus, IconX, IconChevronDown, IconSend,
+  IconPlus, IconX, IconChevronDown, IconSend, IconCpu, IconCheck,
 } from "./icons";
+
+const MODEL_STORAGE_KEY = "sm_model";
 
 export function ChatPanel({
   token,
@@ -45,6 +47,26 @@ export function ChatPanel({
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // LLM picker: available models + current selection (persisted across sessions).
+  const [models, setModels] = useState<api.ModelInfo[]>([]);
+  const [model, setModel] = useState<string>("");
+  const [modelOpen, setModelOpen] = useState(false);
+
+  useEffect(() => {
+    api.getModels().then(({ default: def, models }) => {
+      setModels(models);
+      const saved = typeof window !== "undefined" ? localStorage.getItem(MODEL_STORAGE_KEY) : null;
+      setModel(saved && models.some((m) => m.id === saved) ? saved : def);
+    }).catch(() => {});
+  }, []);
+
+  function pickModel(id: string) {
+    setModel(id);
+    setModelOpen(false);
+    if (typeof window !== "undefined") localStorage.setItem(MODEL_STORAGE_KEY, id);
+  }
+  const currentModel = models.find((m) => m.id === model);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -115,7 +137,7 @@ export function ChatPanel({
         });
         if (!activeId) setActiveId(meta.conversation_id);
         loadConversations();
-      });
+      }, model || undefined);
     } catch {
       setMessages((prev) => {
         const next = [...prev];
@@ -179,7 +201,42 @@ export function ChatPanel({
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-2.5 dark:border-slate-700">
           <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Chat</h2>
-          <div className="relative">
+          <div className="flex items-center gap-2">
+            {/* Model picker */}
+            {models.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setModelOpen((o) => !o)}
+                  title="Choose the AI model"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
+                  <IconCpu size={15} className="text-indigo-500" />
+                  <span className="hidden max-w-28 truncate sm:inline">{currentModel?.label || "Model"}</span>
+                  <IconChevronDown size={14} className={`transition-transform ${modelOpen ? "rotate-180" : ""}`} />
+                </button>
+                {modelOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setModelOpen(false)} />
+                    <div className="absolute right-0 z-20 mt-1 w-60 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                      {models.map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => pickModel(m.id)}
+                          className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                          <IconCheck size={15} className={`mt-0.5 shrink-0 ${m.id === model ? "text-indigo-600" : "text-transparent"}`} />
+                          <span className="min-w-0">
+                            <span className="block text-sm font-medium text-slate-800 dark:text-slate-100">{m.label}</span>
+                            <span className="block text-xs text-slate-400">{m.description}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            <div className="relative">
             <Button variant="secondary" onClick={() => setToolsOpen((o) => !o)}>
               <IconSparkles size={16} /> Study tools
               <IconChevronDown size={15} className={`transition-transform ${toolsOpen ? "rotate-180" : ""}`} />
@@ -203,6 +260,7 @@ export function ChatPanel({
                 </div>
               </>
             )}
+            </div>
           </div>
         </div>
 
