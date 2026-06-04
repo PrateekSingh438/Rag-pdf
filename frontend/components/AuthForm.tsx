@@ -26,7 +26,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     const token = params.get("token");
     const err = params.get("error");
     if (err) {
-      setError("Google sign-in failed. Please try again.");
+      const reason = params.get("reason");
+      setError(`Google sign-in failed${reason ? ` (${reason})` : ""}. Please try again.`);
       window.history.replaceState({}, "", window.location.pathname);
     } else if (token) {
       window.history.replaceState({}, "", window.location.pathname);
