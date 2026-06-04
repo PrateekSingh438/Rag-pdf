@@ -115,9 +115,15 @@ def google_login():
 @router.get("/google/callback")
 def google_callback(code: str | None = None, error: str | None = None,
                     db: Session = Depends(get_db)):
-    fail = RedirectResponse(f"{settings.frontend_url}/login?error=google")
-    if error or not code:
-        return fail
+    def fail(reason: str):
+        # Surface a coarse reason (never secrets) to diagnose OAuth failures.
+        print(f"[google_oauth] callback failed: {reason}")
+        return RedirectResponse(f"{settings.frontend_url}/login?error=google&reason={reason}")
+
+    if error:
+        return fail(f"provider_{error}")
+    if not code:
+        return fail("no_code")
     try:
         with httpx.Client(timeout=15) as client:
             tok = client.post(GOOGLE_TOKEN_URL, data={
@@ -128,16 +134,19 @@ def google_callback(code: str | None = None, error: str | None = None,
                 "grant_type": "authorization_code",
             })
             if tok.status_code != 200:
-                return fail
+                print(f"[google_oauth] token exchange {tok.status_code}: {tok.text[:300]}")
+                return fail(f"token_{tok.status_code}")
             access = tok.json().get("access_token")
+            if not access:
+                return fail("no_access_token")
             info = client.get(GOOGLE_USERINFO_URL,
                               headers={"Authorization": f"Bearer {access}"}).json()
     except httpx.HTTPError:
-        return fail
+        return fail("http_error")
 
     email = info.get("email")
     if not email:
-        return fail
+        return fail("no_email")
     user = db.query(User).filter_by(email=email).first()
     if not user:
         user = User(email=email,
