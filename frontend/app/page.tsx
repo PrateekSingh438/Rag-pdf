@@ -117,6 +117,11 @@ export default function Landing() {
             </div>
           ))}
         </div>
+        <div className="mt-8 text-center">
+          <Link href="/benchmark" className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+            See how retrieval quality is measured <IconArrowRight size={15} />
+          </Link>
+        </div>
       </section>
 
       <footer className="mt-auto border-t border-slate-200 py-6 text-center text-sm text-slate-400 dark:border-slate-800">
