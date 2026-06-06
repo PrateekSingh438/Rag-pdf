@@ -12,7 +12,7 @@ python-multipart
 python-dotenv
 slowapi
 sentence-transformers
-chromadb
+pgvector
 pypdf
 pymupdf
 rapidocr-onnxruntime

@@ -1,7 +1,7 @@
 """Evaluation harness + ablation.
 
 For each configuration in {chunk_size: 256, 512} x {use_reranker: True, False} we:
-  1. Build an ephemeral, in-memory Chroma index from the bundled corpus, chunked
+  1. Build an ephemeral, in-memory index (numpy) from the bundled corpus, chunked
      at that chunk_size (so the index does not touch the app's persistent store).
   2. Measure retrieval quality against the labeled dataset, with no LLM:
        - hit_rate@k : fraction of questions with >=1 gold-doc chunk in the top-k
@@ -11,15 +11,15 @@ For each configuration in {chunk_size: 256, 512} x {use_reranker: True, False} w
      the grounded answer, then ask the model to score 0..1 whether every claim is
      supported by the retrieved sources.
 
-Results for all configs are written to results.json, which GET /eval serves to
-the dashboard. Run with:  python -m app.eval.run_eval
+Results for all configs are written to results.json (used for the README / report).
+Run with:  python -m app.eval.run_eval
 """
 import os
 import json
 import time
 from datetime import datetime, timezone
 
-import chromadb
+import numpy as np
 
 from ..config import settings
 from ..rag.chunker import chunk_document
@@ -58,45 +58,41 @@ def load_dataset():
 
 
 def build_index(chunk_size: int):
-    """Chunk the corpus at chunk_size and load it into an ephemeral collection.
-    Returns (collection, gold_chunk_counts)."""
-    client = chromadb.EphemeralClient()
-    # EphemeralClient shares one in-memory system, so use a per-config name and
-    # drop any stale collection from a previous config in the same run.
-    name = f"eval_cs{chunk_size}"
-    try:
-        client.delete_collection(name)
-    except Exception:
-        pass
-    col = client.create_collection(name, metadata={"hnsw:space": "cosine"})
+    """Chunk the corpus at chunk_size and embed it into an in-memory index.
+    Returns ((items, matrix), gold_chunk_counts), where items[i] aligns with row i
+    of the normalized embedding matrix, so cosine similarity is just a dot product."""
+    items, embs = [], []
     gold_counts: dict[str, int] = {}
     for doc_id, (fname, meta) in enumerate(CORPUS.items()):
         pages = [{"page": 1, "text": meta["text"]}]
         chunks = chunk_document(pages, fname, meta["doc_type"], chunk_size=chunk_size)
         gold_counts[fname] = len(chunks)
-        ids = [f"{doc_id}_{c['metadata']['chunk_index']}" for c in chunks]
-        docs = [c["text"] for c in chunks]
-        metas = [{**c["metadata"], "doc_id": doc_id} for c in chunks]
-        col.add(ids=ids, embeddings=embed(docs), documents=docs, metadatas=metas)
-    return col, gold_counts
+        for c, vec in zip(chunks, embed([c["text"] for c in chunks])):
+            items.append({"id": f"{doc_id}_{c['metadata']['chunk_index']}",
+                          "text": c["text"],
+                          "metadata": {**c["metadata"], "doc_id": doc_id}})
+            embs.append(vec)
+    matrix = np.array(embs, dtype=np.float32) if embs else np.zeros((0, 1), dtype=np.float32)
+    return (items, matrix), gold_counts
 
 
-def search(col, query: str, use_reranker: bool):
-    res = col.query(query_embeddings=embed([query]), n_results=TOP_N,
-                    include=["documents", "metadatas", "distances"])
-    if not res["ids"][0]:
+def search(index, query: str, use_reranker: bool):
+    items, matrix = index
+    if matrix.shape[0] == 0:
         return []
-    hits = [{"id": res["ids"][0][i], "text": res["documents"][0][i],
-             "metadata": res["metadatas"][0][i], "score": 1 - res["distances"][0][i]}
-            for i in range(len(res["ids"][0]))]
+    q = np.asarray(embed([query])[0], dtype=np.float32)
+    sims = matrix @ q  # embeddings are normalized -> dot product == cosine similarity
+    order = np.argsort(-sims)[:TOP_N]
+    hits = [{"id": items[i]["id"], "text": items[i]["text"],
+             "metadata": items[i]["metadata"], "score": float(sims[i])} for i in order]
     return rerank(query, hits, top_k=TOP_K) if use_reranker else hits[:TOP_K]
 
 
-def retrieval_metrics(col, gold_counts, dataset, use_reranker):
+def retrieval_metrics(index, gold_counts, dataset, use_reranker):
     hit_sum = recall_sum = mrr_sum = 0.0
     for item in dataset:
         gold = item["gold_doc"]
-        hits = search(col, item["question"], use_reranker)
+        hits = search(index, item["question"], use_reranker)
         gold_in_topk = [i for i, h in enumerate(hits) if h["metadata"]["source_file"] == gold]
         hit_sum += 1.0 if gold_in_topk else 0.0
         total_gold = max(1, gold_counts.get(gold, 1))
@@ -119,7 +115,7 @@ def _llm_with_retry(messages, **kwargs):
     raise RuntimeError("LLM call failed after retries")
 
 
-def faithfulness_metric(col, dataset, use_reranker):
+def faithfulness_metric(index, dataset, use_reranker):
     """Average LLM-as-judge faithfulness over a small sample of questions."""
     if not settings.groq_api_key:
         print("  (no GROQ_API_KEY; skipping faithfulness)")
@@ -127,7 +123,7 @@ def faithfulness_metric(col, dataset, use_reranker):
     sample = dataset[:FAITHFULNESS_SAMPLE]
     total = 0.0
     for item in sample:
-        hits = search(col, item["question"], use_reranker)
+        hits = search(index, item["question"], use_reranker)
         answer = _llm_with_retry(build_messages(item["question"], hits),
                                  temperature=0.0, max_tokens=400)
         time.sleep(LLM_CALL_SPACING_SEC)
@@ -152,12 +148,12 @@ def run():
           f"(k={TOP_K}, top_n={TOP_N})\n")
     runs = []
     for chunk_size in CHUNK_SIZES:
-        col, gold_counts = build_index(chunk_size)
+        index, gold_counts = build_index(chunk_size)
         total_chunks = sum(gold_counts.values())
         print(f"chunk_size={chunk_size}: {total_chunks} chunks in index")
         for use_reranker in RERANKER_OPTIONS:
-            rm = retrieval_metrics(col, gold_counts, dataset, use_reranker)
-            faith = faithfulness_metric(col, dataset, use_reranker)
+            rm = retrieval_metrics(index, gold_counts, dataset, use_reranker)
+            faith = faithfulness_metric(index, dataset, use_reranker)
             run_result = {
                 "config": {"chunk_size": chunk_size, "use_reranker": use_reranker},
                 "recall_at_k": rm["recall_at_k"],

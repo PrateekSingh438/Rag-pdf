@@ -10,9 +10,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
+from sqlalchemy import func
 from .config import settings
 from .database import init_db, SessionLocal
-from .models import Document
+from .models import Document, Chunk
 from .ratelimit import limiter
 from .routers import auth as auth_router
 from .routers import knowledge_bases as kb_router
@@ -42,6 +43,23 @@ def _recover_stuck_documents() -> None:
         db.close()
 
 
+def _reconcile_documents() -> None:
+    """A document marked "ready" but with no vectors in the DB is an orphan — e.g.
+    one ingested before vectors moved into Postgres, whose old on-disk store is
+    gone. Flip those to "failed" so the UI prompts a re-upload instead of silently
+    answering "not found"."""
+    db = SessionLocal()
+    try:
+        for doc in db.query(Document).filter_by(status="ready").all():
+            if not db.query(func.count(Chunk.id)).filter_by(doc_id=doc.id).scalar():
+                doc.status, doc.num_chunks = "failed", 0
+        db.commit()
+    except Exception:
+        pass
+    finally:
+        db.close()
+
+
 def _warm_models() -> None:
     """Exercise the embedder + reranker once so the first chat doesn't pay the
     cold-start cost. Best-effort; failures here must never block the app."""
@@ -58,6 +76,7 @@ def _warm_models() -> None:
 async def lifespan(app: FastAPI):
     init_db()
     _recover_stuck_documents()
+    _reconcile_documents()
     threading.Thread(target=_warm_models, daemon=True).start()
     yield
 

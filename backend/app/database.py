@@ -35,9 +35,33 @@ def _ensure_user_columns():
                 conn.execute(text(f"ALTER TABLE users ADD COLUMN {col} VARCHAR"))
 
 
+def _is_postgres() -> bool:
+    return not settings.database_url.startswith("sqlite")
+
+
+def _ensure_vector_index():
+    """An approximate-nearest-neighbour index keeps similarity search fast as the
+    chunk table grows. Best-effort: requires pgvector >= 0.5 (Neon has it)."""
+    if not _is_postgres():
+        return
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS chunks_embedding_hnsw "
+                "ON chunks USING hnsw (embedding vector_cosine_ops)"
+            ))
+    except Exception:
+        pass
+
+
 def init_db():
+    # The pgvector extension must exist before create_all() builds the vector column.
+    if _is_postgres():
+        with engine.begin() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
     Base.metadata.create_all(bind=engine)
     _ensure_user_columns()
+    _ensure_vector_index()
 
 
 def get_db():

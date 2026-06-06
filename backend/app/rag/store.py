@@ -1,61 +1,95 @@
-"""Vector storage. Each knowledge base gets its own Chroma collection so users'
-data stays isolated. Embeddings are normalized so cosine similarity = dot product.
+"""Vector storage backed by Postgres (pgvector). Each chunk is a row in the
+`chunks` table tagged with its knowledge base, so users' data stays isolated via a
+`kb_id` filter. Embeddings are normalized, so cosine distance ranks by semantic
+similarity and `score = 1 - distance` is the cosine similarity.
 
-The embedder and Chroma client are module-level singletons: the model loads once
-per process, and the persistent client keeps vectors on disk under CHROMA_DIR."""
-import chromadb
+Keeping vectors in Postgres (instead of an on-disk Chroma store) means they
+persist across container rebuilds — the DB is the single source of truth, so the
+document records and their vectors can't drift out of sync.
+
+The embedder is a module-level singleton: the model loads once per process. Each
+function opens its own short-lived session since callers don't pass one in."""
+from sqlalchemy import select, delete as sa_delete
 from sentence_transformers import SentenceTransformer
 from ..config import settings
+from ..database import SessionLocal
+from ..models import Chunk
 
 _embedder = SentenceTransformer(settings.embed_model)
-_client = chromadb.PersistentClient(path=settings.chroma_dir)
-
-
-def _col(kb_id: int):
-    return _client.get_or_create_collection(f"kb_{kb_id}",
-                                             metadata={"hnsw:space": "cosine"})
 
 
 def embed(texts):
     return _embedder.encode(texts, normalize_embeddings=True).tolist()
 
 
+def _meta(c: Chunk) -> dict:
+    return {"source_file": c.source_file, "doc_type": c.doc_type,
+            "page": c.page, "chunk_index": c.chunk_index, "doc_id": c.doc_id}
+
+
 def add_chunks(kb_id: int, doc_id: int, chunks):
-    col = _col(kb_id)
-    ids = [f"{doc_id}_{c['metadata']['chunk_index']}" for c in chunks]
-    docs = [c["text"] for c in chunks]
-    metas = [{**c["metadata"], "doc_id": doc_id} for c in chunks]
-    col.add(ids=ids, embeddings=embed(docs), documents=docs, metadatas=metas)
+    embeddings = embed([c["text"] for c in chunks])
+    db = SessionLocal()
+    try:
+        for c, emb in zip(chunks, embeddings):
+            m = c["metadata"]
+            db.add(Chunk(
+                chunk_uid=f"{doc_id}_{m['chunk_index']}",
+                kb_id=kb_id, doc_id=doc_id, text=c["text"],
+                source_file=m["source_file"], doc_type=m["doc_type"],
+                page=m["page"], chunk_index=m["chunk_index"], embedding=emb,
+            ))
+        db.commit()
+    finally:
+        db.close()
 
 
 def vector_search(kb_id: int, query: str, top_n=10, doc_type=None):
-    col = _col(kb_id)
-    where = {"doc_type": doc_type} if doc_type else None
-    res = col.query(query_embeddings=embed([query]), n_results=top_n,
-                    where=where, include=["documents", "metadatas", "distances"])
-    if not res["ids"][0]:
-        return []
-    return [{"id": res["ids"][0][i], "text": res["documents"][0][i],
-             "metadata": res["metadatas"][0][i], "score": 1 - res["distances"][0][i]}
-            for i in range(len(res["ids"][0]))]
+    q = embed([query])[0]
+    db = SessionLocal()
+    try:
+        dist = Chunk.embedding.cosine_distance(q).label("dist")
+        stmt = select(Chunk, dist).where(Chunk.kb_id == kb_id)
+        if doc_type:
+            stmt = stmt.where(Chunk.doc_type == doc_type)
+        stmt = stmt.order_by(dist).limit(top_n)
+        return [{"id": c.chunk_uid, "text": c.text, "metadata": _meta(c),
+                 "score": 1.0 - float(d)}
+                for c, d in db.execute(stmt).all()]
+    finally:
+        db.close()
 
 
 def get_chunks(kb_id: int, doc_type=None, limit=None):
     """Fetch stored chunks (no query) — used to analyze a KB's material, e.g.
     mining all exam-paper chunks for topic frequency."""
-    col = _col(kb_id)
-    where = {"doc_type": doc_type} if doc_type else None
-    res = col.get(where=where, include=["documents", "metadatas"], limit=limit)
-    ids = res.get("ids") or []
-    docs = res.get("documents") or []
-    metas = res.get("metadatas") or []
-    return [{"id": i, "text": d, "metadata": m} for i, d, m in zip(ids, docs, metas)]
+    db = SessionLocal()
+    try:
+        stmt = select(Chunk).where(Chunk.kb_id == kb_id)
+        if doc_type:
+            stmt = stmt.where(Chunk.doc_type == doc_type)
+        if limit:
+            stmt = stmt.limit(limit)
+        return [{"id": c.chunk_uid, "text": c.text, "metadata": _meta(c)}
+                for c in db.execute(stmt).scalars().all()]
+    finally:
+        db.close()
 
 
 def delete_document(kb_id: int, doc_id: int):
-    _col(kb_id).delete(where={"doc_id": doc_id})
+    db = SessionLocal()
+    try:
+        db.execute(sa_delete(Chunk).where(Chunk.kb_id == kb_id, Chunk.doc_id == doc_id))
+        db.commit()
+    finally:
+        db.close()
 
 
 def delete_collection(kb_id: int):
-    """Drop a knowledge base's entire Chroma collection (used when a KB is deleted)."""
-    _client.delete_collection(f"kb_{kb_id}")
+    """Drop all of a knowledge base's chunks (used when a KB is deleted)."""
+    db = SessionLocal()
+    try:
+        db.execute(sa_delete(Chunk).where(Chunk.kb_id == kb_id))
+        db.commit()
+    finally:
+        db.close()

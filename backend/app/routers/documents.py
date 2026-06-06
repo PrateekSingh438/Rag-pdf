@@ -10,7 +10,7 @@ from fastapi import (APIRouter, Depends, HTTPException, UploadFile, File, Form,
 from sqlalchemy.orm import Session
 from ..config import settings
 from ..database import get_db
-from ..models import User, KnowledgeBase, Document
+from ..models import User, KnowledgeBase, Document, DocumentFile
 from ..schemas import DocumentOut
 from ..auth import get_current_user
 from ..services.ingest_service import ingest_document
@@ -30,6 +30,20 @@ def _owned_kb_or_404(kb_id: int, user: User, db: Session) -> KnowledgeBase:
 def _doc_path(kb_id: int, doc_id: int, filename: str) -> str:
     safe = os.path.basename(filename)
     return os.path.join(settings.upload_dir, str(kb_id), f"{doc_id}_{safe}")
+
+
+def _ensure_file_on_disk(db: Session, doc_id: int, path: str) -> bool:
+    """Make sure the file is on the (ephemeral) disk, restoring it from the durable
+    copy in Postgres if a rebuild wiped it. False if we have no copy anywhere."""
+    if os.path.exists(path):
+        return True
+    rec = db.get(DocumentFile, doc_id)
+    if rec and rec.content:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "wb") as f:
+            f.write(rec.content)
+        return True
+    return False
 
 
 @router.post("", response_model=DocumentOut)
@@ -63,10 +77,15 @@ async def upload_document(
     db.commit()
     db.refresh(doc)
 
+    data = await file.read()
     path = _doc_path(kb_id, doc.id, doc.filename)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "wb") as f:
-        f.write(await file.read())
+        f.write(data)
+    # Keep a durable copy in Postgres so the PDF preview and re-ingestion survive a
+    # container rebuild that wipes the local disk.
+    db.add(DocumentFile(doc_id=doc.id, kb_id=kb_id, content=data))
+    db.commit()
 
     background.add_task(ingest_document, doc.id, path, kb_id, doc.filename, doc_type)
     return doc
@@ -90,7 +109,7 @@ def delete_document(kb_id: int, doc_id: int, db: Session = Depends(get_db),
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    # Best-effort cleanup of vectors and file, then remove the DB row.
+    # Best-effort cleanup of vectors and file, then remove the DB rows.
     try:
         store_delete_document(kb_id, doc_id)
     except Exception:
@@ -99,6 +118,7 @@ def delete_document(kb_id: int, doc_id: int, db: Session = Depends(get_db),
     if os.path.exists(path):
         os.remove(path)
 
+    db.query(DocumentFile).filter_by(doc_id=doc_id).delete()
     db.delete(doc)
     db.commit()
     return {"deleted": doc_id}
@@ -116,7 +136,7 @@ def retry_document(kb_id: int, doc_id: int, background: BackgroundTasks = None,
         raise HTTPException(status_code=404, detail="Document not found")
 
     path = _doc_path(kb_id, doc_id, doc.filename)
-    if not os.path.exists(path):
+    if not _ensure_file_on_disk(db, doc_id, path):
         raise HTTPException(status_code=400,
                             detail="Original file is no longer available; please re-upload.")
 
@@ -146,7 +166,7 @@ def document_page(kb_id: int, doc_id: int, page: int, q: str | None = None,
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     path = _doc_path(kb_id, doc_id, doc.filename)
-    if not os.path.exists(path):
+    if not _ensure_file_on_disk(db, doc_id, path):
         raise HTTPException(status_code=404, detail="No source file for this document")
 
     pdf = fitz.open(path)

@@ -1,10 +1,18 @@
 """SQLAlchemy ORM models. One user -> many knowledge bases -> many documents
-and conversations. Conversations hold messages. Citations are stored as JSON."""
+and conversations. Conversations hold messages. Citations are stored as JSON.
+
+Vectors live in the `chunks` table (pgvector) and uploaded files in
+`document_files`, both in Postgres — so retrieval and the PDF preview survive a
+container rebuild instead of being lost on the Space's ephemeral disk."""
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, LargeBinary
 from sqlalchemy.orm import relationship, declarative_base
+from pgvector.sqlalchemy import Vector
 
 Base = declarative_base()
+
+# Embedding dimension of BAAI/bge-small-en-v1.5.
+EMBED_DIM = 384
 
 
 class User(Base):
@@ -85,3 +93,30 @@ class SiteStat(Base):
     __tablename__ = "site_stats"
     id = Column(Integer, primary_key=True)
     visits = Column(Integer, default=0)
+
+
+class Chunk(Base):
+    """One embedded chunk of a document, stored in Postgres via pgvector. kb_id and
+    doc_id are logical references (not enforced FKs) so cleanup ordering is simple;
+    chunk_uid is the stable '<doc_id>_<chunk_index>' id used by the retriever."""
+    __tablename__ = "chunks"
+    id = Column(Integer, primary_key=True)
+    chunk_uid = Column(String, index=True)
+    kb_id = Column(Integer, index=True)
+    doc_id = Column(Integer, index=True)
+    text = Column(Text)
+    source_file = Column(String)
+    doc_type = Column(String)
+    page = Column(Integer)
+    chunk_index = Column(Integer)
+    embedding = Column(Vector(EMBED_DIM))
+
+
+class DocumentFile(Base):
+    """The raw bytes of an uploaded file, kept in Postgres so the PDF page preview
+    (and re-ingestion) still works after the ephemeral disk is wiped. One row per
+    document. For production scale this would move to object storage (S3/R2)."""
+    __tablename__ = "document_files"
+    doc_id = Column(Integer, primary_key=True)
+    kb_id = Column(Integer, index=True)
+    content = Column(LargeBinary)

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..config import settings
 from ..database import get_db
-from ..models import User, KnowledgeBase, Document
+from ..models import User, KnowledgeBase, Document, DocumentFile
 from ..schemas import KBCreate, KBOut
 from ..auth import get_current_user
 from ..rag.store import delete_collection, add_chunks
@@ -83,6 +83,7 @@ def delete_kb(kb_id: int, db: Session = Depends(get_db),
     kb_dir = os.path.join(settings.upload_dir, str(kb_id))
     if os.path.isdir(kb_dir):
         shutil.rmtree(kb_dir, ignore_errors=True)
+    db.query(DocumentFile).filter_by(kb_id=kb_id).delete()
     db.delete(kb)  # cascades to documents + conversations in the DB
     db.commit()
     return {"deleted": kb_id}

@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..ratelimit import limiter
 from ..database import get_db
-from ..models import User, KnowledgeBase, QuizAttempt
+from ..models import User, KnowledgeBase, QuizAttempt, DocumentFile
 from ..schemas import UserCreate, UserOut, Token, ProfileUpdate, ChangePassword
 from ..auth import hash_password, verify_password, create_access_token, get_current_user
 from ..rag.store import delete_collection
@@ -93,6 +93,7 @@ def delete_all_data(db: Session = Depends(get_db), user: User = Depends(get_curr
         kb_dir = os.path.join(settings.upload_dir, str(kb.id))
         if os.path.isdir(kb_dir):
             shutil.rmtree(kb_dir, ignore_errors=True)
+        db.query(DocumentFile).filter_by(kb_id=kb.id).delete()
     db.query(QuizAttempt).filter_by(user_id=user.id).delete()
     for kb in kbs:
         db.delete(kb)  # cascades documents + conversations + messages
