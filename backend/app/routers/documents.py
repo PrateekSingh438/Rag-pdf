@@ -6,7 +6,7 @@ immediately while chunking/embedding happens in the background. Delete removes t
 DB row, the file on disk, and the document's vectors from Chroma."""
 import os
 from fastapi import (APIRouter, Depends, HTTPException, UploadFile, File, Form,
-                     BackgroundTasks, Response)
+                     BackgroundTasks, Response, Request)
 from sqlalchemy.orm import Session
 from ..config import settings
 from ..database import get_db
@@ -15,6 +15,7 @@ from ..schemas import DocumentOut
 from ..auth import get_current_user
 from ..services.ingest_service import ingest_document
 from ..rag.store import delete_document as store_delete_document
+from ..ratelimit import limiter
 
 router = APIRouter(prefix="/kb/{kb_id}/documents", tags=["documents"])
 
@@ -32,7 +33,9 @@ def _doc_path(kb_id: int, doc_id: int, filename: str) -> str:
 
 
 @router.post("", response_model=DocumentOut)
+@limiter.limit("20/minute")
 async def upload_document(
+    request: Request,
     kb_id: int,
     file: UploadFile = File(...),
     doc_type: str = Form("notes"),
@@ -47,6 +50,11 @@ async def upload_document(
     if not (file.filename or "").lower().endswith((".pdf", ".jpg", ".jpeg", ".png", ".webp")):
         raise HTTPException(status_code=400,
                             detail="Only PDF or image files (JPG, PNG, WEBP) are supported")
+    # Reject oversized uploads before we copy the file or schedule ingestion.
+    max_bytes = settings.max_upload_mb * 1024 * 1024
+    if file.size is not None and file.size > max_bytes:
+        raise HTTPException(status_code=413,
+                            detail=f"File is too large (max {settings.max_upload_mb} MB)")
 
     # Create the row first so we have an id to build a stable file path.
     doc = Document(filename=os.path.basename(file.filename), doc_type=doc_type,

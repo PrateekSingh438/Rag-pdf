@@ -1,7 +1,7 @@
 """Insight endpoints for a KB: exam-frequency analysis (exam papers only) and the
 richer cross-document study insights (notes + exams -> ranked high-yield topics).
 Both verify KB ownership."""
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..auth import get_current_user
@@ -11,6 +11,7 @@ from ..schemas import (ExamAnalysisResponse, StudyInsightsResponse,
 from ..rag.exam_analysis import analyze_exams
 from ..rag.topic_analysis import analyze_study_topics
 from ..rag.study_plan import generate_study_plan
+from ..ratelimit import limiter
 
 router = APIRouter(prefix="/kb/{kb_id}", tags=["insights"])
 
@@ -42,7 +43,9 @@ def study_insights(kb_id: int, db: Session = Depends(get_db),
 
 
 @router.post("/study-plan", response_model=StudyPlanResponse)
-def study_plan(kb_id: int, body: StudyPlanRequest, db: Session = Depends(get_db),
+@limiter.limit("20/minute")
+def study_plan(request: Request, kb_id: int, body: StudyPlanRequest,
+               db: Session = Depends(get_db),
                user: User = Depends(get_current_user)):
     _own(kb_id, user, db)
     days = max(1, min(body.days, 30))

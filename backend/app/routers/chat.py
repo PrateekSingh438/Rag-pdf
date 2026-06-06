@@ -6,10 +6,11 @@ starts.
 Also exposes conversation history endpoints (list / detail / delete), each scoped
 to the authenticated user's knowledge bases."""
 import json
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from ..database import get_db, SessionLocal
+from ..ratelimit import limiter
 from ..auth import get_current_user
 from ..models import User, KnowledgeBase, Conversation, Message
 from ..schemas import ConversationOut, ConversationDetail, MessageOut
@@ -39,7 +40,8 @@ def _owned_conversation_or_404(conv_id: int, user: User, db: Session) -> Convers
 
 
 @router.post("/{kb_id}")
-def chat(kb_id: int, payload: dict, db: Session = Depends(get_db),
+@limiter.limit("30/minute")
+def chat(request: Request, kb_id: int, payload: dict, db: Session = Depends(get_db),
          user: User = Depends(get_current_user)):
     _owned_kb_or_404(kb_id, user, db)
     question = payload.get("question")

@@ -5,7 +5,8 @@
 import { Fragment } from "react";
 import { ChatMessage, Citation } from "@/lib/api";
 import { MarkdownMessage } from "./MarkdownMessage";
-import { IconFile } from "./icons";
+import { IconFile, IconCopy } from "./icons";
+import { useToast } from "./Toast";
 
 function renderWithCitations(
   content: string,
@@ -44,6 +45,16 @@ export function MessageBubble({
   const isUser = message.role === "user";
   const citations = message.citations || [];
   const examLinks = message.exam_links || [];
+  const { toast } = useToast();
+
+  async function copyAnswer() {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      toast("Answer copied", "success");
+    } catch {
+      toast("Couldn't copy to clipboard", "error");
+    }
+  }
 
   if (isUser) {
     return (
@@ -69,6 +80,18 @@ export function MessageBubble({
             <MarkdownMessage content={message.content} citations={citations} onCitation={onCitation} />
           )}
         </div>
+
+        {!message.streaming && message.content && (
+          <div className="flex">
+            <button
+              onClick={copyAnswer}
+              title="Copy answer"
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+            >
+              <IconCopy size={13} /> Copy
+            </button>
+          </div>
+        )}
 
         {citations.length > 0 && (
           <div className="flex flex-wrap gap-1.5">

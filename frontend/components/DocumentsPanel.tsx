@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback, useRef, DragEvent } from "react";
 import * as api from "@/lib/api";
 import { StatusBadge, Spinner } from "./ui";
 import { IconUpload, IconRefresh, IconX } from "./icons";
+import { useToast } from "./Toast";
 
 export function DocumentsPanel({
   token,
@@ -22,6 +23,7 @@ export function DocumentsPanel({
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const refresh = useCallback(async () => {
     try {
@@ -54,12 +56,14 @@ export function DocumentsPanel({
         await refresh();
         onChange?.();
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Upload failed");
+        const msg = e instanceof Error ? e.message : "Upload failed";
+        setError(msg);
+        toast(msg, "error");
       } finally {
         setUploading(false);
       }
     },
-    [token, kbId, docType, refresh, onChange],
+    [token, kbId, docType, refresh, onChange, toast],
   );
 
   function onDrop(e: DragEvent) {
@@ -135,7 +139,7 @@ export function DocumentsPanel({
           <span className="inline-flex flex-col items-center gap-1.5 text-slate-500">
             <IconUpload size={22} className="text-slate-400" />
             <span>Drop a <span className="font-medium capitalize text-indigo-600">{docType}</span> PDF or image here, or click to browse</span>
-            <span className="text-xs text-slate-400">PDF, JPG, PNG — scanned pages &amp; photos are OCR&apos;d automatically</span>
+            <span className="text-xs text-slate-400">PDF, JPG, PNG · max 25&nbsp;MB — scanned pages &amp; photos are OCR&apos;d automatically</span>
           </span>
         )}
       </div>

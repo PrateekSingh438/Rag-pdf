@@ -1,18 +1,21 @@
 """Practice question generation endpoint. Verifies KB ownership, then generates
 questions grounded in that KB's notes via the RAG practice module."""
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..auth import get_current_user
 from ..models import User, KnowledgeBase
 from ..schemas import PracticeRequest, PracticeResponse
 from ..rag.practice import generate_practice_questions
+from ..ratelimit import limiter
 
 router = APIRouter(prefix="/kb/{kb_id}/practice", tags=["practice"])
 
 
 @router.post("", response_model=PracticeResponse)
-def make_practice(kb_id: int, body: PracticeRequest, db: Session = Depends(get_db),
+@limiter.limit("20/minute")
+def make_practice(request: Request, kb_id: int, body: PracticeRequest,
+                  db: Session = Depends(get_db),
                   user: User = Depends(get_current_user)):
     kb = db.query(KnowledgeBase).filter_by(id=kb_id, owner_id=user.id).first()
     if not kb:

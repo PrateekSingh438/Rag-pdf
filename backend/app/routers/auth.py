@@ -6,11 +6,12 @@ import shutil
 import secrets
 from urllib.parse import urlencode
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from ..config import settings
+from ..ratelimit import limiter
 from ..database import get_db
 from ..models import User, KnowledgeBase, QuizAttempt
 from ..schemas import UserCreate, UserOut, Token, ProfileUpdate, ChangePassword
@@ -25,7 +26,8 @@ GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
 
 
 @router.post("/register", response_model=Token)
-def register(body: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("10/hour")
+def register(request: Request, body: UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter_by(email=body.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
     user = User(email=body.email, hashed_password=hash_password(body.password))
@@ -36,7 +38,9 @@ def register(body: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+def login(request: Request, form: OAuth2PasswordRequestForm = Depends(),
+          db: Session = Depends(get_db)):
     # OAuth2 form uses "username" for the email field.
     user = db.query(User).filter_by(email=form.username).first()
     if not user or not verify_password(form.password, user.hashed_password):

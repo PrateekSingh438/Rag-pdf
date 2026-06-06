@@ -33,6 +33,8 @@ export default function KBWorkspacePage() {
   const [examInsightsOpen, setExamInsightsOpen] = useState(false);
   const [studyInsightsOpen, setStudyInsightsOpen] = useState(false);
   const [studyPlanOpen, setStudyPlanOpen] = useState(false);
+  // On small screens the two panels don't fit side by side, so toggle between them.
+  const [mobileTab, setMobileTab] = useState<"docs" | "chat">("chat");
 
   useEffect(() => {
     if (!token) return;
@@ -69,23 +71,50 @@ export default function KBWorkspacePage() {
             This knowledge base does not exist or is not yours.
           </Card>
         ) : (
-          <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
-            <Card className="flex h-[calc(100vh-9rem)] flex-col p-4">
-              <DocumentsPanel token={token} kbId={kbId} />
-            </Card>
-            <Card className="h-[calc(100vh-9rem)] overflow-hidden p-0">
-              <ChatPanel
-                token={token}
-                kbId={kbId}
-                onCitation={setCitation}
-                onOpenPractice={() => setPracticeOpen(true)}
-                onOpenQuiz={() => setQuizOpen(true)}
-                onOpenExamInsights={() => setExamInsightsOpen(true)}
-                onOpenStudyInsights={() => setStudyInsightsOpen(true)}
-                onOpenStudyPlan={() => setStudyPlanOpen(true)}
-              />
-            </Card>
-          </div>
+          <>
+            {/* mobile-only switch between the two panels */}
+            <div className="mb-3 inline-flex self-start rounded-lg border border-slate-300 p-0.5 text-sm lg:hidden dark:border-slate-600">
+              {(["chat", "docs"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setMobileTab(t)}
+                  className={`rounded-md px-4 py-1.5 font-medium transition-colors ${
+                    mobileTab === t
+                      ? "bg-indigo-600 text-white"
+                      : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                  }`}
+                >
+                  {t === "docs" ? "Documents" : "Chat"}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
+              <Card
+                className={`h-[calc(100vh-12rem)] flex-col p-4 lg:flex lg:h-[calc(100vh-9rem)] ${
+                  mobileTab === "docs" ? "flex" : "hidden"
+                }`}
+              >
+                <DocumentsPanel token={token} kbId={kbId} />
+              </Card>
+              <Card
+                className={`h-[calc(100vh-12rem)] overflow-hidden p-0 lg:block lg:h-[calc(100vh-9rem)] ${
+                  mobileTab === "chat" ? "block" : "hidden"
+                }`}
+              >
+                <ChatPanel
+                  token={token}
+                  kbId={kbId}
+                  onCitation={setCitation}
+                  onOpenPractice={() => setPracticeOpen(true)}
+                  onOpenQuiz={() => setQuizOpen(true)}
+                  onOpenExamInsights={() => setExamInsightsOpen(true)}
+                  onOpenStudyInsights={() => setStudyInsightsOpen(true)}
+                  onOpenStudyPlan={() => setStudyPlanOpen(true)}
+                />
+              </Card>
+            </div>
+          </>
         )}
       </main>
 

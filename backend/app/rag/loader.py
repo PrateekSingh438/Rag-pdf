@@ -12,6 +12,7 @@ cost.
 """
 import os
 from pypdf import PdfReader
+from ..config import settings
 
 # A page with fewer than this many characters of extracted text is treated as
 # scanned and sent to OCR.
@@ -76,8 +77,10 @@ def extract_pages(path: str):
     pages = [{"page": i + 1, "text": (pg.extract_text() or "")}
              for i, pg in enumerate(reader.pages)]
 
-    # Pages with no real text layer -> OCR fallback (scanned documents).
+    # Pages with no real text layer -> OCR fallback (scanned documents). OCR is
+    # expensive, so bound how many pages we render+recognize per document.
     needs_ocr = [p["page"] for p in pages if len(p["text"].strip()) < _MIN_CHARS]
+    needs_ocr = needs_ocr[:settings.max_ocr_pages]
     if needs_ocr:
         ocr_text = _ocr_pages(path, needs_ocr)
         for p in pages:

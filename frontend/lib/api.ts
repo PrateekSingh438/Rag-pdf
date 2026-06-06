@@ -4,6 +4,19 @@
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// Lightweight liveness check (used to detect a cold/sleeping backend). Resolves
+// true if the server answers OK within the timeout; throws on network failure.
+export async function health(timeoutMs = 4000): Promise<boolean> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${API}/health`, { signal: ctrl.signal });
+    return res.ok;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ---- Types (mirror the backend schemas) ----
 export interface KB {
   id: number;
@@ -222,23 +235,6 @@ export const generateStudyPlan = (token: string, kbId: number, days: number, hou
     jsonBody({ days, hours_per_day: hoursPerDay }),
   );
 
-// ---- Eval ----
-export const getEvals = (token: string) => req<EvalResults>("/eval", token);
-
-export interface EvalRunResult {
-  config: { chunk_size: number; use_reranker: boolean };
-  recall_at_k: number;
-  hit_rate_at_k: number;
-  mrr: number;
-  faithfulness: number;
-}
-export interface EvalResults {
-  k: number;
-  num_questions: number;
-  generated_at: string;
-  runs: EvalRunResult[];
-}
-
 // ---- Stats / progress ----
 export interface Badge {
   name: string;
@@ -314,13 +310,18 @@ export async function streamChat(
   onToken: (t: string) => void,
   onDone: (m: { conversation_id: number; citations: Citation[]; exam_links: ExamLink[] }) => void,
   model?: string,
+  signal?: AbortSignal,
 ) {
   const res = await fetch(`${API}/chat/${kbId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ question, conversation_id: conversationId, model }),
+    signal,
   });
-  if (!res.ok || !res.body) throw new Error(`Chat failed (${res.status})`);
+  if (!res.ok || !res.body) {
+    if (res.status === 429) throw new Error("rate_limited");
+    throw new Error(`Chat failed (${res.status})`);
+  }
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";

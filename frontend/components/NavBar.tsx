@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
-import { IconGradCap, IconHome, IconChart, IconSun, IconMoon, IconLogOut } from "./icons";
+import { IconGradCap, IconHome, IconSun, IconMoon, IconLogOut } from "./icons";
 
 export function NavBar() {
   const { user, logout } = useAuth();
@@ -17,7 +17,6 @@ export function NavBar() {
 
   const links = [
     { href: "/dashboard", label: "Dashboard", icon: IconHome },
-    { href: "/evals", label: "Evaluation", icon: IconChart },
   ];
 
   return (

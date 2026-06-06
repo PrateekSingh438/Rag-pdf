@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     chroma_dir: str = "./chroma_data"
     upload_dir: str = "./uploads"
+    # Upload guards: reject oversized files outright, and cap how many pages get
+    # the expensive OCR fallback (text-layer pages are cheap and stay uncapped).
+    max_upload_mb: int = 25
+    max_ocr_pages: int = 100
 
     # Google OAuth (optional — Google login is enabled only when these are set).
     google_client_id: str = ""
