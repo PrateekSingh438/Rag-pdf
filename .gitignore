@@ -36,3 +36,10 @@ frontend/.env.local
 main.tex
 MNNIT logo.jpg
 Resume_20233367.pdf
+
+# Internal docs & AI-assistant scaffolding (kept local, not for the public repo)
+DEPLOYMENT.md
+StudyMate-BUILD-SPEC.md
+STUDY_GUIDE.md
+CLAUDE.md
+AGENTS.md
