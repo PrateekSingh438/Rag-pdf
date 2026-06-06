@@ -1,10 +1,11 @@
-# Local one-command stack: Postgres + FastAPI backend + Next.js frontend.
-# Secrets (GROQ_API_KEY, SECRET_KEY) are read from a root .env file via ${VAR}
-# substitution — copy .env.example to .env and fill it in. Data persists in named
-# volumes (Postgres, Chroma, uploads, HuggingFace model cache).
+# Local one-command stack: Postgres (with pgvector) + FastAPI backend + Next.js
+# frontend. Secrets (GROQ_API_KEY, SECRET_KEY) are read from a root .env file via
+# ${VAR} substitution — copy .env.example to .env and fill it in. Data persists in
+# named volumes (Postgres, uploads, HuggingFace model cache).
 services:
   db:
-    image: postgres:16
+    # pgvector image = stock Postgres 16 with the vector extension preinstalled.
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -29,10 +30,8 @@ services:
       GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
       EMBED_MODEL: BAAI/bge-small-en-v1.5
       RERANK_MODEL: cross-encoder/ms-marco-MiniLM-L-6-v2
-      CHROMA_DIR: /app/chroma_data
       UPLOAD_DIR: /app/uploads
     volumes:
-      - chroma:/app/chroma_data
       - uploads:/app/uploads
       - hfcache:/root/.cache/huggingface
     ports:
@@ -54,6 +53,5 @@ services:
 
 volumes:
   pgdata:
-  chroma:
   uploads:
   hfcache:
