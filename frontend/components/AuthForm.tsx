@@ -29,6 +29,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       const reason = params.get("reason");
       setError(`Google sign-in failed${reason ? ` (${reason})` : ""}. Please try again.`);
       window.history.replaceState({}, "", window.location.pathname);
+    } else if (params.get("expired")) {
+      setError("Your session expired — please sign in again.");
+      window.history.replaceState({}, "", window.location.pathname);
     } else if (token) {
       window.history.replaceState({}, "", window.location.pathname);
       auth

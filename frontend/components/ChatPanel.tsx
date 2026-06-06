@@ -54,6 +54,7 @@ export function ChatPanel({
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // LLM picker: available models + current selection (persisted across sessions).
   const [models, setModels] = useState<api.ModelInfo[]>([]);
@@ -103,6 +104,14 @@ export function ChatPanel({
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  // Auto-grow the input as the user types multi-line, capped at ~5 rows (max-h-32).
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+  }, [input]);
 
   async function selectConversation(id: number) {
     setActiveId(id);
@@ -374,12 +383,13 @@ export function ChatPanel({
         <div className="border-t border-slate-200 p-3 dark:border-slate-700">
           <div className="flex items-end gap-2 rounded-xl border border-slate-300 bg-white p-2 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 dark:border-slate-600 dark:bg-slate-800 dark:focus-within:ring-indigo-900">
             <textarea
+              ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
               rows={1}
               placeholder="Ask about your notes…"
-              className="max-h-32 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-slate-900 outline-none dark:text-slate-100"
+              className="max-h-32 flex-1 resize-none overflow-y-auto bg-transparent px-2 py-1.5 text-sm text-slate-900 outline-none dark:text-slate-100"
             />
             {sending ? (
               <Button variant="secondary" onClick={stop} title="Stop generating">

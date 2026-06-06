@@ -93,12 +93,24 @@ async function req<T>(
   if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${API}${path}`, { ...options, headers });
   if (!res.ok) {
+    // A 401 on an authenticated call means the session expired or the token is
+    // invalid — clear it and bounce to login so the user isn't stuck on errors.
+    if (res.status === 401 && token && typeof window !== "undefined") {
+      localStorage.removeItem("studymate_token");
+      if (!window.location.pathname.startsWith("/login")) {
+        window.location.href = "/login?expired=1";
+      }
+    }
     let detail = `Request failed (${res.status})`;
-    try {
-      const body = await res.json();
-      if (body?.detail) detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
-    } catch {
-      /* ignore */
+    if (res.status === 429) {
+      detail = "Too many requests — please wait a moment and try again.";
+    } else {
+      try {
+        const body = await res.json();
+        if (body?.detail) detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+      } catch {
+        /* ignore */
+      }
     }
     throw new Error(detail);
   }
