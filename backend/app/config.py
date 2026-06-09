@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     # clearly-irrelevant pairs ~-10; on-topic pairs sit well above). An empty
     # result then means "answer honestly: not found" without burning an LLM call.
     rerank_score_floor: float = -8.0
+    # Agentic self-check: verify each answer's claims against its sources after
+    # streaming (one extra fast-model call; +1 revision call only on failure).
+    self_check: bool = True
     upload_dir: str = "./uploads"
     # Upload guards: reject oversized files outright, and cap how many pages get
     # the expensive OCR fallback (text-layer pages are cheap and stay uncapped).

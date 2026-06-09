@@ -17,10 +17,12 @@ from ..ratelimit import limiter
 from ..auth import get_current_user
 from ..models import User, KnowledgeBase, Conversation, Message
 from ..schemas import ConversationOut, ConversationDetail, ConversationUpdate, MessageOut
+from ..config import settings
 from ..rag.retriever import retrieve
 from ..rag.generator import build_messages, citations_from_hits, NOT_FOUND_ANSWER
 from ..rag.llm import chat, chat_stream
 from ..rag.exam_linker import find_related_exam_questions
+from ..rag.verifier import self_check, revise_answer
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +130,7 @@ def chat_endpoint(request: Request, kb_id: int, payload: dict, db: Session = Dep
     citations = citations_from_hits(hits)
     messages = build_messages(question, hits, history=history)
 
-    def persist(full: str, cites: list) -> int:
+    def persist(full: str, cites: list, verification: dict | None) -> int:
         # Persist with a fresh session (the request session is closed by now).
         s = SessionLocal()
         try:
@@ -151,7 +153,8 @@ def chat_endpoint(request: Request, kb_id: int, payload: dict, db: Session = Dep
             else:
                 s.add(Message(conversation_id=conv.id, role="user", content=question))
             s.add(Message(conversation_id=conv.id, role="assistant",
-                          content=full, citations=json.dumps(cites)))
+                          content=full, citations=json.dumps(cites),
+                          verification=json.dumps(verification) if verification else None))
             s.commit()
             return conv.id
         finally:
@@ -180,6 +183,23 @@ def chat_endpoint(request: Request, kb_id: int, payload: dict, db: Session = Dep
                 full += note
                 yield f"data: {json.dumps({'type': 'token', 'content': note})}\n\n"
 
+        # Agentic self-check: verify the draft's claims against the sources and,
+        # if anything is unsupported, do one bounded revision. Runs after the
+        # stream so it never delays tokens; a failure just skips the badge.
+        verification = None
+        if settings.self_check and hits and full.strip() and NOT_FOUND_ANSWER not in full:
+            try:
+                verification = self_check(full, hits)
+                if verification["verdict"] == "fail":
+                    revised = revise_answer(question, hits, full,
+                                            verification["unsupported"], model=model)
+                    if revised:
+                        full = revised
+                        verification["revised"] = True
+            except Exception:
+                logger.warning("Self-check unavailable for this answer", exc_info=True)
+                verification = None
+
         cites = _mark_used_citations(citations, full)
         # Related past-exam questions are nice-to-have metadata: computed after the
         # tokens so they never delay the answer, and never allowed to break it.
@@ -189,9 +209,13 @@ def chat_endpoint(request: Request, kb_id: int, payload: dict, db: Session = Dep
                 exam_links = find_related_exam_questions(kb_id, retrieval_query)
             except Exception:
                 logger.warning("Exam-link lookup failed", exc_info=True)
-        cid = persist(full, cites)
-        yield ("data: " + json.dumps({"type": "done", "conversation_id": cid,
-               "citations": cites, "exam_links": exam_links}) + "\n\n")
+        cid = persist(full, cites, verification)
+        done = {"type": "done", "conversation_id": cid, "citations": cites,
+                "exam_links": exam_links, "verification": verification}
+        if verification and verification.get("revised"):
+            # The revised text replaces the streamed draft on the client.
+            done["content"] = full
+        yield "data: " + json.dumps(done) + "\n\n"
 
     return StreamingResponse(stream(), media_type="text/event-stream")
 
@@ -218,6 +242,7 @@ def get_conversation(conv_id: int, db: Session = Depends(get_db),
         id=conv.id, title=conv.title, created_at=conv.created_at,
         messages=[MessageOut(id=m.id, role=m.role, content=m.content,
                              citations=json.loads(m.citations or "[]"),
+                             verification=json.loads(m.verification) if m.verification else None,
                              created_at=m.created_at) for m in msgs],
     )
 

@@ -72,6 +72,7 @@ class Message(Base):
     role = Column(String)                            # "user" | "assistant"
     content = Column(Text)
     citations = Column(Text, default="[]")           # JSON string
+    verification = Column(Text, nullable=True)       # self-check verdict, JSON string
     created_at = Column(DateTime, default=datetime.utcnow)
     conversation = relationship("Conversation", back_populates="messages")
 

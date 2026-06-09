@@ -122,6 +122,7 @@ class MessageOut(BaseModel):
     role: str
     content: str
     citations: list = []
+    verification: dict | None = None
     created_at: datetime
 
 

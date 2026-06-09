@@ -80,6 +80,7 @@ def init_db():
     Base.metadata.create_all(bind=engine)
     _ensure_columns("users", ("name", "institution", "picture"))
     _ensure_columns("documents", ("error",))
+    _ensure_columns("messages", ("verification",))
     _ensure_vector_index()
     _ensure_text_index()
 
