@@ -1,21 +1,23 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-psycopg2-binary
-pydantic
-pydantic-settings
-email-validator
-python-jose[cryptography]
-passlib[bcrypt]
+# Pinned to the versions this app was developed and tested against, so a fresh
+# deploy can't silently pull breaking releases.
+fastapi==0.136.3
+uvicorn[standard]==0.48.0
+sqlalchemy==2.0.50
+psycopg2-binary>=2.9  # production (Postgres) only; local dev runs SQLite
+pydantic==2.13.4
+pydantic-settings==2.14.1
+email-validator==2.3.0
+python-jose[cryptography]==3.5.0
+passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
-python-multipart
-python-dotenv
-slowapi
-sentence-transformers
-pgvector
-pypdf
-pymupdf
-rapidocr-onnxruntime
-rank-bm25
-groq
-numpy
+python-multipart==0.0.30
+python-dotenv==1.2.2
+slowapi==0.1.9
+sentence-transformers==5.5.1
+pgvector==0.4.2
+pypdf==6.12.2
+pymupdf==1.27.2.3
+rapidocr-onnxruntime==1.4.4
+rank-bm25==0.2.2
+groq==1.4.0
+numpy==2.4.6

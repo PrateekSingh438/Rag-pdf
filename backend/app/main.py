@@ -4,6 +4,7 @@ frontend, initializes the database on startup, and mounts the feature routers.
 On startup it also (a) flips any documents left mid-ingestion by a previous
 process back to "failed" so they can be retried, and (b) warms the embedding and
 reranker models in a background thread so the first real request isn't slow."""
+import logging
 import threading
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -12,8 +13,25 @@ from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 from sqlalchemy import func
 from .config import settings
-from .database import init_db, SessionLocal
+from .database import init_db, is_postgres, SessionLocal
 from .models import Document, Chunk
+
+logger = logging.getLogger(__name__)
+
+# JWTs signed with a known default key are forgeable by anyone who reads the
+# repo. Refuse to start against a real (Postgres) database without a real key;
+# SQLite is treated as throwaway local dev and only warned about.
+_PLACEHOLDER_KEYS = {"", "change-me", "replace-with-a-long-random-string"}
+
+
+def _check_secret_key() -> None:
+    if settings.secret_key not in _PLACEHOLDER_KEYS:
+        return
+    if is_postgres():
+        raise RuntimeError(
+            "SECRET_KEY is unset or a placeholder. Set a long random SECRET_KEY "
+            "in backend/.env (e.g. `openssl rand -hex 32`) before starting.")
+    logger.warning("SECRET_KEY is a placeholder — fine for local SQLite dev only.")
 from .ratelimit import limiter
 from .routers import auth as auth_router
 from .routers import knowledge_bases as kb_router
@@ -35,10 +53,12 @@ def _recover_stuck_documents() -> None:
         stuck = db.query(Document).filter_by(status="processing").all()
         for d in stuck:
             d.status = "failed"
+            d.error = "Processing was interrupted by a server restart — retry."
         if stuck:
             db.commit()
+            logger.info("Recovered %d document(s) stuck in 'processing'", len(stuck))
     except Exception:
-        pass
+        logger.exception("Failed to recover stuck documents")
     finally:
         db.close()
 
@@ -53,9 +73,10 @@ def _reconcile_documents() -> None:
         for doc in db.query(Document).filter_by(status="ready").all():
             if not db.query(func.count(Chunk.id)).filter_by(doc_id=doc.id).scalar():
                 doc.status, doc.num_chunks = "failed", 0
+                doc.error = "Search data for this document was lost — retry to rebuild it."
         db.commit()
     except Exception:
-        pass
+        logger.exception("Document/vector reconciliation failed")
     finally:
         db.close()
 
@@ -69,11 +90,12 @@ def _warm_models() -> None:
         embed(["warmup"])
         rerank("warmup", [{"text": "warmup"}], top_k=1)
     except Exception:
-        pass
+        logger.warning("Model warmup failed (first request will be slow)", exc_info=True)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _check_secret_key()
     init_db()
     _recover_stuck_documents()
     _reconcile_documents()

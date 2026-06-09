@@ -31,7 +31,6 @@ host it for a low-traffic demo.
 | `GROQ_MODEL` | `llama-3.3-70b-versatile` | |
 | `FRONTEND_URL` | `https://your-app.vercel.app` | post-login redirect |
 | `CORS_ORIGINS` | `https://your-app.vercel.app` | allowed API origins |
-| `CHROMA_DIR` | `/tmp/chroma_data` | writable on Spaces |
 | `UPLOAD_DIR` | `/tmp/uploads` | writable on Spaces |
 | `HF_HOME` | `/tmp/hf` | model cache (writable) |
 | `GOOGLE_CLIENT_ID` | `...apps.googleusercontent.com` | optional |
