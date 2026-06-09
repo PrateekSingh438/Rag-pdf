@@ -69,12 +69,21 @@ export interface ConversationMeta {
   title: string;
   created_at: string;
 }
+// Result of the backend's agentic self-check: the answer's claims were verified
+// against the retrieved sources after generation. `revised` means the draft
+// failed and was rewritten from the sources before being finalized.
+export interface Verification {
+  verdict: "pass" | "fail";
+  unsupported?: string[];
+  revised?: boolean;
+}
 export interface ChatMessage {
   id?: number;
   role: "user" | "assistant";
   content: string;
   citations?: Citation[];
   exam_links?: ExamLink[];
+  verification?: Verification | null;
   created_at?: string;
   streaming?: boolean;
 }
@@ -369,7 +378,14 @@ export async function streamChat(
   token: string,
   conversationId: number | null,
   onToken: (t: string) => void,
-  onDone: (m: { conversation_id: number; citations: Citation[]; exam_links: ExamLink[] }) => void,
+  onDone: (m: {
+    conversation_id: number;
+    citations: Citation[];
+    exam_links: ExamLink[];
+    verification?: Verification | null;
+    // Present when the self-check revised the draft: replaces the streamed text.
+    content?: string;
+  }) => void,
   opts: { model?: string; signal?: AbortSignal; regenerate?: boolean } = {},
 ) {
   const res = await fetch(`${API}/chat/${kbId}`, {

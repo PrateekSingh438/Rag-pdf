@@ -3,10 +3,43 @@
 // clickable citation chips, and show an "Appeared in your exams" section built
 // from the exam_links returned with the answer. Sources the answer actually cited
 // render prominently; ones that were merely retrieved are dimmed.
-import { ChatMessage, Citation } from "@/lib/api";
+import { ChatMessage, Citation, Verification } from "@/lib/api";
 import { MarkdownMessage } from "./MarkdownMessage";
-import { IconFile, IconCopy, IconRefresh } from "./icons";
+import { IconFile, IconCopy, IconRefresh, IconShieldCheck, IconAlertTriangle } from "./icons";
 import { useToast } from "./Toast";
+
+// Badge for the agentic self-check that ran after the answer: every claim was
+// verified against the retrieved sources (and the draft rewritten if needed).
+function VerificationBadge({ v }: { v: Verification }) {
+  if (v.revised) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 text-xs text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300"
+        title="The first draft contained claims the sources didn't support, so the answer was rewritten from the sources."
+      >
+        <IconShieldCheck size={13} /> Self-corrected against sources
+      </span>
+    );
+  }
+  if (v.verdict === "pass") {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400"
+        title="A second pass checked every claim in this answer against the cited sources."
+      >
+        <IconShieldCheck size={13} /> Self-checked against sources
+      </span>
+    );
+  }
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-600 dark:bg-amber-950/60 dark:text-amber-400"
+      title={(v.unsupported || []).join("\n") || "Some claims couldn't be verified against your documents."}
+    >
+      <IconAlertTriangle size={13} /> Some claims couldn&apos;t be verified
+    </span>
+  );
+}
 
 export function MessageBubble({
   message,
@@ -67,7 +100,8 @@ export function MessageBubble({
         </div>
 
         {!message.streaming && message.content && (
-          <div className="flex gap-1">
+          <div className="flex flex-wrap items-center gap-1">
+            {message.verification && <VerificationBadge v={message.verification} />}
             <button
               onClick={copyAnswer}
               title="Copy answer"

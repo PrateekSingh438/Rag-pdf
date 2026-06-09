@@ -229,7 +229,13 @@ export function ChatPanel({
 
     try {
       await api.streamChat(kbId, question, token, activeId, appendToken, (meta) => {
-        finalizeLast({ citations: meta.citations, exam_links: meta.exam_links });
+        finalizeLast({
+          citations: meta.citations,
+          exam_links: meta.exam_links,
+          verification: meta.verification ?? null,
+          // When the self-check revised the draft, swap in the corrected text.
+          ...(meta.content ? { content: meta.content } : {}),
+        });
         if (!activeId) setActiveId(meta.conversation_id);
         loadConversations();
       }, { model: model || undefined, signal: controller.signal, regenerate });
