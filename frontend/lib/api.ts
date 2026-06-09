@@ -28,6 +28,7 @@ export interface Doc {
   filename: string;
   doc_type: "notes" | "exam";
   status: "processing" | "ready" | "failed";
+  error: string | null;
   num_chunks: number;
   created_at: string;
 }
@@ -38,6 +39,9 @@ export interface Citation {
   doc_type: string | null;
   doc_id: number | null;
   snippet: string;
+  // True when the answer actually cites this source inline; absent on older
+  // messages saved before the flag existed (treat as used).
+  used?: boolean;
 }
 
 // Fetch a rendered+highlighted PDF page as an object URL (authed; for <img src>).
@@ -180,11 +184,47 @@ export const deleteKB = (token: string, id: number) =>
 export const listDocuments = (token: string, kbId: number) =>
   req<Doc[]>(`/kb/${kbId}/documents`, token);
 
-export async function uploadDocument(token: string, kbId: number, file: File, docType: string) {
-  const form = new FormData();
-  form.append("file", file);
-  form.append("doc_type", docType);
-  return req<Doc>(`/kb/${kbId}/documents`, token, { method: "POST", body: form });
+// Mirrors the backend's max_upload_mb so oversized files are rejected before
+// any bytes leave the browser.
+export const MAX_UPLOAD_MB = 25;
+
+// XHR instead of fetch purely for upload progress events.
+export function uploadDocument(
+  token: string,
+  kbId: number,
+  file: File,
+  docType: string,
+  onProgress?: (pct: number) => void,
+): Promise<Doc> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API}/kb/${kbId}/documents`);
+    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(JSON.parse(xhr.responseText) as Doc);
+        return;
+      }
+      let detail = xhr.status === 429
+        ? "Too many requests — please wait a moment and try again."
+        : `Upload failed (${xhr.status})`;
+      try {
+        const body = JSON.parse(xhr.responseText);
+        if (body?.detail && typeof body.detail === "string") detail = body.detail;
+      } catch {
+        /* keep generic message */
+      }
+      reject(new Error(detail));
+    };
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+    const form = new FormData();
+    form.append("file", file);
+    form.append("doc_type", docType);
+    xhr.send(form);
+  });
 }
 
 export const deleteDocument = (token: string, kbId: number, docId: number) =>
@@ -198,6 +238,11 @@ export const listConversations = (token: string, kbId: number) =>
   req<ConversationMeta[]>(`/chat/conversations?kb_id=${kbId}`, token);
 export const getConversation = (token: string, convId: number) =>
   req<ConversationDetail>(`/chat/conversations/${convId}`, token);
+export const renameConversation = (token: string, convId: number, title: string) =>
+  req<ConversationMeta>(`/chat/conversations/${convId}`, token, {
+    ...jsonBody({ title }),
+    method: "PATCH",
+  });
 export const deleteConversation = (token: string, convId: number) =>
   req<{ deleted: number }>(`/chat/conversations/${convId}`, token, { method: "DELETE" });
 
@@ -287,13 +332,17 @@ export interface SiteStats {
 }
 export const getSiteStats = () => req<SiteStats>("/stats/site", null);
 // Counts a visit (deduped client-side to once per browser-day) and returns counts.
+// The day marker is only written once the visit actually registered, so a failed
+// request gets retried on the next load instead of being lost.
 export async function recordVisit(): Promise<SiteStats> {
   const key = "sm_visit_day";
   const today = new Date().toISOString().slice(0, 10);
-  const fresh = typeof window !== "undefined" && localStorage.getItem(key) !== today;
-  if (typeof window !== "undefined") localStorage.setItem(key, today);
-  if (fresh) return req<SiteStats>("/stats/visit", null, { method: "POST" });
-  return getSiteStats();
+  if (typeof window === "undefined" || localStorage.getItem(key) === today) {
+    return getSiteStats();
+  }
+  const stats = await req<SiteStats>("/stats/visit", null, { method: "POST" });
+  localStorage.setItem(key, today);
+  return stats;
 }
 
 export const recordQuizAttempt = (
@@ -321,14 +370,18 @@ export async function streamChat(
   conversationId: number | null,
   onToken: (t: string) => void,
   onDone: (m: { conversation_id: number; citations: Citation[]; exam_links: ExamLink[] }) => void,
-  model?: string,
-  signal?: AbortSignal,
+  opts: { model?: string; signal?: AbortSignal; regenerate?: boolean } = {},
 ) {
   const res = await fetch(`${API}/chat/${kbId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ question, conversation_id: conversationId, model }),
-    signal,
+    body: JSON.stringify({
+      question,
+      conversation_id: conversationId,
+      model: opts.model,
+      regenerate: opts.regenerate || undefined,
+    }),
+    signal: opts.signal,
   });
   if (!res.ok || !res.body) {
     if (res.status === 429) throw new Error("rate_limited");

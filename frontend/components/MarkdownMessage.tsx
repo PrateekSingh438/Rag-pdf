@@ -71,7 +71,7 @@ export function MarkdownMessage({
                 return (
                   <button
                     onClick={() => onCitation(cit)}
-                    className="mx-0.5 inline-flex items-center rounded bg-indigo-100 px-1.5 py-0.5 align-baseline text-xs font-semibold text-indigo-700 no-underline hover:bg-indigo-200"
+                    className="mx-0.5 inline-flex items-center rounded bg-indigo-100 px-1.5 py-0.5 align-baseline text-xs font-semibold text-indigo-700 no-underline hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:hover:bg-indigo-900"
                   >
                     {children}
                   </button>

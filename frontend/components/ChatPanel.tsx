@@ -13,10 +13,22 @@ import { useToast } from "./Toast";
 import {
   IconTarget, IconCalendar, IconSparkles, IconClipboard, IconChart,
   IconPlus, IconX, IconChevronDown, IconSend, IconCpu, IconCheck,
-  IconStop, IconMenu,
+  IconStop, IconMenu, IconPencil, IconSearch,
 } from "./icons";
 
 const MODEL_STORAGE_KEY = "sm_model";
+
+// Backend timestamps are naive UTC; pin them to UTC before diffing so the
+// relative time isn't off by the local timezone offset.
+function timeAgo(iso: string): string {
+  const utc = /Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + "Z";
+  const s = Math.floor((Date.now() - new Date(utc).getTime()) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  if (s < 7 * 86400) return `${Math.floor(s / 86400)}d ago`;
+  return new Date(utc).toLocaleDateString();
+}
 
 export function ChatPanel({
   token,
@@ -48,11 +60,15 @@ export function ChatPanel({
     { label: "Exam insights", icon: IconChart, fn: onOpenExamInsights },
   ];
   const [conversations, setConversations] = useState<api.ConversationMeta[]>([]);
+  const [convFilter, setConvFilter] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
   const [activeId, setActiveId] = useState<number | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const atBottomRef = useRef(true); // only auto-scroll while the user is at the bottom
   const abortRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -69,13 +85,26 @@ export function ChatPanel({
     }).catch(() => {});
   }, []);
 
-  // Esc closes any open menu / drawer.
+  // Global keys: Esc closes menus/drawers, "/" focuses the composer, Ctrl/Cmd+K
+  // starts a new chat.
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
       if (e.key === "Escape") {
         setModelOpen(false);
         setToolsOpen(false);
         setConvOpen(false);
+        return;
+      }
+      const t = e.target as HTMLElement;
+      const typing = t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable;
+      if (e.key === "/" && !typing) {
+        e.preventDefault();
+        textareaRef.current?.focus();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setActiveId(null);
+        setMessages([]);
+        textareaRef.current?.focus();
       }
     }
     window.addEventListener("keydown", onKey);
@@ -101,8 +130,18 @@ export function ChatPanel({
     loadConversations();
   }, [loadConversations]);
 
+  function onThreadScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  }
+
+  // Follow the stream only while the user is at the bottom; never yank them back
+  // down if they've scrolled up to read something.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    if (atBottomRef.current) {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+    }
   }, [messages]);
 
   // Auto-grow the input as the user types multi-line, capped at ~5 rows (max-h-32).
@@ -114,9 +153,14 @@ export function ChatPanel({
   }, [input]);
 
   async function selectConversation(id: number) {
-    setActiveId(id);
-    const detail = await api.getConversation(token, id);
-    setMessages(detail.messages);
+    try {
+      const detail = await api.getConversation(token, id);
+      setActiveId(id);
+      setMessages(detail.messages);
+      atBottomRef.current = true;
+    } catch {
+      toast("Couldn't load that conversation", "error");
+    }
   }
 
   function newChat() {
@@ -126,9 +170,33 @@ export function ChatPanel({
 
   async function removeConversation(id: number, e: MouseEvent) {
     e.stopPropagation();
-    await api.deleteConversation(token, id);
+    try {
+      await api.deleteConversation(token, id);
+    } catch {
+      toast("Couldn't delete the conversation", "error");
+      return;
+    }
     if (activeId === id) newChat();
     loadConversations();
+  }
+
+  function startRename(c: api.ConversationMeta, e: MouseEvent) {
+    e.stopPropagation();
+    setEditingId(c.id);
+    setEditTitle(c.title);
+  }
+
+  async function commitRename() {
+    const id = editingId;
+    const title = editTitle.trim();
+    setEditingId(null);
+    if (id == null || !title) return;
+    try {
+      await api.renameConversation(token, id, title);
+      loadConversations();
+    } catch {
+      toast("Couldn't rename the conversation", "error");
+    }
   }
 
   function finalizeLast(patch: Partial<ChatMessage>) {
@@ -144,17 +212,9 @@ export function ChatPanel({
     abortRef.current?.abort();
   }
 
-  async function send() {
-    const question = input.trim();
-    if (!question || sending) return;
-    setInput("");
+  async function runStream(question: string, regenerate: boolean) {
     setSending(true);
-
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", content: question },
-      { role: "assistant", content: "", streaming: true, citations: [], exam_links: [] },
-    ]);
+    atBottomRef.current = true;
 
     const appendToken = (t: string) =>
       setMessages((prev) => {
@@ -172,7 +232,7 @@ export function ChatPanel({
         finalizeLast({ citations: meta.citations, exam_links: meta.exam_links });
         if (!activeId) setActiveId(meta.conversation_id);
         loadConversations();
-      }, model || undefined, controller.signal);
+      }, { model: model || undefined, signal: controller.signal, regenerate });
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") {
         // User stopped generation — keep whatever streamed in so far.
@@ -202,6 +262,32 @@ export function ChatPanel({
     }
   }
 
+  async function send() {
+    const question = input.trim();
+    if (!question || sending) return;
+    setInput("");
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: question },
+      { role: "assistant", content: "", streaming: true, citations: [], exam_links: [] },
+    ]);
+    await runStream(question, false);
+  }
+
+  // Re-ask the last question; the new answer replaces the old one (also in the DB).
+  function regenerate() {
+    if (sending) return;
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    if (!lastUser) return;
+    setMessages((prev) => {
+      const next = [...prev];
+      if (next.length && next[next.length - 1].role === "assistant") next.pop();
+      next.push({ role: "assistant", content: "", streaming: true, citations: [], exam_links: [] });
+      return next;
+    });
+    void runStream(lastUser.content, true);
+  }
+
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -209,13 +295,18 @@ export function ChatPanel({
     }
   }
 
+  const visibleConversations = convFilter.trim()
+    ? conversations.filter((c) => c.title.toLowerCase().includes(convFilter.trim().toLowerCase()))
+    : conversations;
+
   // Conversation list, reused by the desktop sidebar and the mobile drawer.
   const conversationList = (onPick?: () => void) => (
     <>
-      {conversations.map((c) => (
+      {visibleConversations.map((c) => (
         <div
           key={c.id}
           onClick={() => {
+            if (editingId === c.id) return;
             selectConversation(c.id);
             onPick?.();
           }}
@@ -225,32 +316,78 @@ export function ChatPanel({
               : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
           }`}
         >
-          <span className="truncate">{c.title}</span>
-          <button
-            onClick={(e) => removeConversation(c.id, e)}
-            title="Delete conversation"
-            aria-label="Delete conversation"
-            className="ml-1 grid h-6 w-6 shrink-0 place-items-center rounded text-slate-300 opacity-0 hover:text-red-600 group-hover:opacity-100"
-          >
-            <IconX size={14} />
-          </button>
+          {editingId === c.id ? (
+            <input
+              value={editTitle}
+              autoFocus
+              onChange={(e) => setEditTitle(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onBlur={commitRename}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === "Enter") commitRename();
+                if (e.key === "Escape") setEditingId(null);
+              }}
+              className="w-full rounded border border-indigo-300 bg-white px-1.5 py-0.5 text-sm text-slate-800 outline-none dark:border-indigo-700 dark:bg-slate-900 dark:text-slate-100"
+            />
+          ) : (
+            <>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">{c.title}</span>
+                <span className="block text-[11px] text-slate-400">{timeAgo(c.created_at)}</span>
+              </span>
+              <span className="ml-1 flex shrink-0 items-center">
+                <button
+                  onClick={(e) => startRename(c, e)}
+                  title="Rename conversation"
+                  aria-label="Rename conversation"
+                  className="grid h-6 w-6 place-items-center rounded text-slate-300 opacity-0 hover:text-indigo-600 group-hover:opacity-100 dark:text-slate-500 dark:hover:text-indigo-400"
+                >
+                  <IconPencil size={13} />
+                </button>
+                <button
+                  onClick={(e) => removeConversation(c.id, e)}
+                  title="Delete conversation"
+                  aria-label="Delete conversation"
+                  className="grid h-6 w-6 place-items-center rounded text-slate-300 opacity-0 hover:text-red-600 group-hover:opacity-100 dark:text-slate-500"
+                >
+                  <IconX size={14} />
+                </button>
+              </span>
+            </>
+          )}
         </div>
       ))}
-      {conversations.length === 0 && (
-        <p className="px-2 py-4 text-center text-xs text-slate-400">No conversations yet.</p>
+      {visibleConversations.length === 0 && (
+        <p className="px-2 py-4 text-center text-xs text-slate-400">
+          {conversations.length === 0 ? "No conversations yet." : "No matches."}
+        </p>
       )}
     </>
+  );
+
+  const conversationSearch = conversations.length > 3 && (
+    <div className="relative mb-2">
+      <IconSearch size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+      <input
+        value={convFilter}
+        onChange={(e) => setConvFilter(e.target.value)}
+        placeholder="Search chats"
+        className="w-full rounded-lg border border-slate-200 bg-transparent py-1.5 pl-8 pr-2 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-indigo-300 dark:border-slate-700 dark:text-slate-200 dark:focus:border-indigo-700"
+      />
+    </div>
   );
 
   return (
     <div className="flex h-full">
       {/* conversation sidebar (desktop) */}
       <div className="hidden w-56 shrink-0 flex-col border-r border-slate-200 dark:border-slate-700 md:flex">
-        <div className="p-3">
-          <Button onClick={newChat} className="w-full" variant="secondary">
+        <div className="p-3 pb-2">
+          <Button onClick={newChat} className="w-full" variant="secondary" title="New chat (Ctrl+K)">
             <IconPlus size={16} /> New chat
           </Button>
         </div>
+        <div className="px-3">{conversationSearch}</div>
         <div className="scroll-thin flex-1 space-y-1 overflow-y-auto px-2 pb-2">
           {conversationList()}
         </div>
@@ -281,6 +418,7 @@ export function ChatPanel({
             >
               <IconPlus size={16} /> New chat
             </Button>
+            {conversationSearch}
             <div className="scroll-thin flex-1 space-y-1 overflow-y-auto">
               {conversationList(() => setConvOpen(false))}
             </div>
@@ -309,6 +447,8 @@ export function ChatPanel({
                 <button
                   onClick={() => setModelOpen((o) => !o)}
                   title="Choose the AI model"
+                  aria-haspopup="menu"
+                  aria-expanded={modelOpen}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
                 >
                   <IconCpu size={15} className="text-indigo-500" />
@@ -318,10 +458,12 @@ export function ChatPanel({
                 {modelOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setModelOpen(false)} />
-                    <div className="absolute right-0 z-20 mt-1 w-60 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                    <div role="menu" className="absolute right-0 z-20 mt-1 w-60 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
                       {models.map((m) => (
                         <button
                           key={m.id}
+                          role="menuitemradio"
+                          aria-checked={m.id === model}
                           onClick={() => pickModel(m.id)}
                           className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700"
                         >
@@ -338,17 +480,23 @@ export function ChatPanel({
               </div>
             )}
             <div className="relative">
-            <Button variant="secondary" onClick={() => setToolsOpen((o) => !o)}>
+            <Button
+              variant="secondary"
+              onClick={() => setToolsOpen((o) => !o)}
+              aria-haspopup="menu"
+              aria-expanded={toolsOpen}
+            >
               <IconSparkles size={16} /> <span className="hidden sm:inline">Study tools</span>
               <IconChevronDown size={15} className={`transition-transform ${toolsOpen ? "rotate-180" : ""}`} />
             </Button>
             {toolsOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setToolsOpen(false)} />
-                <div className="absolute right-0 z-20 mt-1 w-48 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                <div role="menu" className="absolute right-0 z-20 mt-1 w-48 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
                   {tools.map(({ label, icon: Icon, fn }) => (
                     <button
                       key={label}
+                      role="menuitem"
                       onClick={() => {
                         setToolsOpen(false);
                         fn();
@@ -365,7 +513,7 @@ export function ChatPanel({
           </div>
         </div>
 
-        <div ref={scrollRef} className="scroll-thin flex-1 space-y-4 overflow-y-auto p-4">
+        <div ref={scrollRef} onScroll={onThreadScroll} className="scroll-thin flex-1 space-y-4 overflow-y-auto p-4">
           {messages.length === 0 ? (
             <div className="grid h-full place-items-center text-center">
               <div className="max-w-sm text-slate-400">
@@ -373,10 +521,25 @@ export function ChatPanel({
                 <p className="mt-1 text-sm">
                   Answers come only from this knowledge base&apos;s documents, with citations and links to past exam questions.
                 </p>
+                <p className="mt-3 text-xs">
+                  Tip: press <kbd className="rounded border border-slate-300 px-1 dark:border-slate-600">/</kbd> to start typing,{" "}
+                  <kbd className="rounded border border-slate-300 px-1 dark:border-slate-600">Ctrl+K</kbd> for a new chat.
+                </p>
               </div>
             </div>
           ) : (
-            messages.map((m, i) => <MessageBubble key={i} message={m} onCitation={onCitation} />)
+            messages.map((m, i) => (
+              <MessageBubble
+                key={i}
+                message={m}
+                onCitation={onCitation}
+                onRegenerate={
+                  m.role === "assistant" && i === messages.length - 1 && !sending
+                    ? regenerate
+                    : undefined
+                }
+              />
+            ))
           )}
         </div>
 
