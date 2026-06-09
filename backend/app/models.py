@@ -47,6 +47,7 @@ class Document(Base):
     filename = Column(String, nullable=False)
     doc_type = Column(String, default="notes")       # "notes" | "exam"
     status = Column(String, default="processing")    # processing | ready | failed
+    error = Column(String, nullable=True)            # human-readable reason when failed
     num_chunks = Column(Integer, default=0)
     kb_id = Column(Integer, ForeignKey("knowledge_bases.id"))
     created_at = Column(DateTime, default=datetime.utcnow)

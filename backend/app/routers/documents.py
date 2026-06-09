@@ -3,7 +3,8 @@
 Upload saves the PDF to UPLOAD_DIR, creates a Document row with status
 "processing", and schedules ingestion as a BackgroundTask so the request returns
 immediately while chunking/embedding happens in the background. Delete removes the
-DB row, the file on disk, and the document's vectors from Chroma."""
+DB rows, the file on disk, and the document's vectors."""
+import logging
 import os
 from fastapi import (APIRouter, Depends, HTTPException, UploadFile, File, Form,
                      BackgroundTasks, Response, Request)
@@ -16,6 +17,8 @@ from ..auth import get_current_user
 from ..services.ingest_service import ingest_document
 from ..rag.store import delete_document as store_delete_document
 from ..ratelimit import limiter
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/kb/{kb_id}/documents", tags=["documents"])
 
@@ -64,20 +67,24 @@ async def upload_document(
     if not (file.filename or "").lower().endswith((".pdf", ".jpg", ".jpeg", ".png", ".webp")):
         raise HTTPException(status_code=400,
                             detail="Only PDF or image files (JPG, PNG, WEBP) are supported")
-    # Reject oversized uploads before we copy the file or schedule ingestion.
+    # Reject oversized uploads. file.size comes from the client's headers and can
+    # be absent, so the authoritative check is on the bytes actually read.
     max_bytes = settings.max_upload_mb * 1024 * 1024
     if file.size is not None and file.size > max_bytes:
         raise HTTPException(status_code=413,
                             detail=f"File is too large (max {settings.max_upload_mb} MB)")
+    data = await file.read()
+    if len(data) > max_bytes:
+        raise HTTPException(status_code=413,
+                            detail=f"File is too large (max {settings.max_upload_mb} MB)")
 
-    # Create the row first so we have an id to build a stable file path.
+    # Create the row so we have an id to build a stable file path.
     doc = Document(filename=os.path.basename(file.filename), doc_type=doc_type,
                    status="processing", kb_id=kb_id)
     db.add(doc)
     db.commit()
     db.refresh(doc)
 
-    data = await file.read()
     path = _doc_path(kb_id, doc.id, doc.filename)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "wb") as f:
@@ -113,7 +120,7 @@ def delete_document(kb_id: int, doc_id: int, db: Session = Depends(get_db),
     try:
         store_delete_document(kb_id, doc_id)
     except Exception:
-        pass
+        logger.exception("Vector cleanup failed for document %s", doc_id)
     path = _doc_path(kb_id, doc_id, doc.filename)
     if os.path.exists(path):
         os.remove(path)
@@ -143,9 +150,10 @@ def retry_document(kb_id: int, doc_id: int, background: BackgroundTasks = None,
     try:
         store_delete_document(kb_id, doc_id)  # drop any partial vectors
     except Exception:
-        pass
+        logger.exception("Partial-vector cleanup failed for document %s", doc_id)
     doc.status = "processing"
     doc.num_chunks = 0
+    doc.error = None
     db.commit()
     db.refresh(doc)
 

@@ -1,10 +1,23 @@
 """Run after a file is saved. Chunk + embed + store, then update DB status.
-Called as a FastAPI BackgroundTask so the upload request returns immediately."""
+Called as a FastAPI BackgroundTask so the upload request returns immediately.
+On failure the document keeps a human-readable `error` so the UI can say WHY
+instead of just showing a "failed" badge."""
+import logging
 from ..rag.loader import extract_pages
 from ..rag.chunker import chunk_document
 from ..rag.store import add_chunks
 from ..database import SessionLocal
 from ..models import Document
+
+logger = logging.getLogger(__name__)
+
+
+def _mark_failed(db, doc_id: int, reason: str):
+    doc = db.get(Document, doc_id)
+    if doc:
+        doc.num_chunks, doc.status = 0, "failed"
+        doc.error = reason[:300]
+        db.commit()
 
 
 def ingest_document(doc_id: int, path: str, kb_id: int, source_file: str, doc_type: str):
@@ -15,20 +28,16 @@ def ingest_document(doc_id: int, path: str, kb_id: int, source_file: str, doc_ty
         if not chunks:
             # No extractable text (e.g. a scanned/image-only or empty PDF). Mark
             # failed cleanly rather than attempting an empty vector insert.
-            doc = db.get(Document, doc_id)
-            if doc:
-                doc.num_chunks, doc.status = 0, "failed"
-                db.commit()
+            _mark_failed(db, doc_id,
+                         "No readable text found — the pages may be blank or the "
+                         "scan too low-quality for OCR.")
             return
         add_chunks(kb_id, doc_id, chunks)
         doc = db.get(Document, doc_id)
-        doc.num_chunks, doc.status = len(chunks), "ready"
+        doc.num_chunks, doc.status, doc.error = len(chunks), "ready", None
         db.commit()
-    except Exception:
-        doc = db.get(Document, doc_id)
-        if doc:
-            doc.status = "failed"
-            db.commit()
-        raise
+    except Exception as e:
+        logger.exception("Ingestion failed for document %s (%s)", doc_id, source_file)
+        _mark_failed(db, doc_id, f"Processing error: {e}")
     finally:
         db.close()
