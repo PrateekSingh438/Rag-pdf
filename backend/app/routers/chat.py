@@ -1,11 +1,14 @@
 """Streaming chat. Retrieve -> build prompt -> stream tokens -> persist -> send
 final metadata (citations + exam links). DB writes happen in a fresh session
 inside the generator because the request-scoped session closes when streaming
-starts.
+starts. Exam links are computed inside the stream, after the tokens, so they
+never delay the first token.
 
-Also exposes conversation history endpoints (list / detail / delete), each scoped
-to the authenticated user's knowledge bases."""
+Also exposes conversation history endpoints (list / detail / rename / delete),
+each scoped to the authenticated user's knowledge bases."""
 import json
+import logging
+import re
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -13,13 +16,29 @@ from ..database import get_db, SessionLocal
 from ..ratelimit import limiter
 from ..auth import get_current_user
 from ..models import User, KnowledgeBase, Conversation, Message
-from ..schemas import ConversationOut, ConversationDetail, MessageOut
+from ..schemas import ConversationOut, ConversationDetail, ConversationUpdate, MessageOut
 from ..rag.retriever import retrieve
-from ..rag.generator import build_messages, citations_from_hits
-from ..rag.llm import chat_stream
+from ..rag.generator import build_messages, citations_from_hits, NOT_FOUND_ANSWER
+from ..rag.llm import chat, chat_stream
 from ..rag.exam_linker import find_related_exam_questions
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+# Inline citation tags ([S1], [S2]...) only mean something next to the sources of
+# the SAME turn. Strip them from history so the model doesn't imitate tags that
+# point at sources the current answer doesn't have.
+_TAG_RE = re.compile(r"\s*\[S\d+\]")
+# Words that signal the question leans on conversation context.
+_REFERENTIAL = re.compile(
+    r"\b(that|this|it|these|those|above|previous|last|again|more|same|elaborate)\b", re.I)
+
+_REWRITE_SYSTEM = (
+    "Rewrite the student's follow-up message as ONE standalone search query about "
+    "their study material, resolving references like 'that' or 'it' from the "
+    "conversation. Keep it short. Output ONLY the rewritten query."
+)
 
 
 def _owned_kb_or_404(kb_id: int, user: User, db: Session) -> KnowledgeBase:
@@ -39,21 +58,54 @@ def _owned_conversation_or_404(conv_id: int, user: User, db: Session) -> Convers
     return conv
 
 
+def _retrieval_query(question: str, prior: list) -> str:
+    """A follow-up like "explain that again" retrieves garbage on its own. When the
+    question looks context-dependent, ask the (fast, default) LLM to rewrite it as
+    a standalone query; fall back to prepending the previous question if that
+    fails. Standalone questions pass through untouched."""
+    if not prior:
+        return question
+    if len(question.split()) > 12 and not _REFERENTIAL.search(question):
+        return question
+    last_user = next((m.content for m in reversed(prior) if m.role == "user"), None)
+    if not last_user:
+        return question
+    convo = "\n".join(f"{m.role}: {m.content[:300]}" for m in prior[-4:])
+    try:
+        rewritten = chat(
+            [{"role": "system", "content": _REWRITE_SYSTEM},
+             {"role": "user", "content": f"Conversation:\n{convo}\n\nFollow-up: {question}"}],
+            temperature=0.0, max_tokens=60).strip().strip('"')
+        if rewritten:
+            return rewritten
+    except Exception:
+        logger.warning("Follow-up query rewrite failed; using heuristic", exc_info=True)
+    return f"{last_user} {question}"
+
+
+def _mark_used_citations(citations: list, answer: str) -> list:
+    """Flag which retrieved sources the answer actually cited, so the UI can show
+    real citations prominently and the merely-retrieved ones dimmed."""
+    used = set(re.findall(r"\[S(\d+)\]", answer))
+    for c in citations:
+        c["used"] = c["tag"].lstrip("S") in used
+    return citations
+
+
 @router.post("/{kb_id}")
 @limiter.limit("30/minute")
-def chat(request: Request, kb_id: int, payload: dict, db: Session = Depends(get_db),
-         user: User = Depends(get_current_user)):
+def chat_endpoint(request: Request, kb_id: int, payload: dict, db: Session = Depends(get_db),
+                  user: User = Depends(get_current_user)):
     _owned_kb_or_404(kb_id, user, db)
     question = payload.get("question")
     if not question:
         raise HTTPException(400, "question is required")
     conversation_id = payload.get("conversation_id")
     model = payload.get("model")  # optional LLM override; validated in chat_stream
+    regenerate = bool(payload.get("regenerate"))
 
-    # Load prior turns for multi-turn context. For a short follow-up (likely a
-    # reference like "explain that again"), fold the previous question into the
-    # retrieval query so we re-retrieve on the right topic.
-    history, retrieval_query = [], question
+    # Load prior turns for multi-turn context.
+    history, prior = [], []
     if conversation_id:
         conv = db.query(Conversation).filter_by(id=conversation_id, kb_id=kb_id).first()
         if conv:
@@ -61,33 +113,23 @@ def chat(request: Request, kb_id: int, payload: dict, db: Session = Depends(get_
                      .filter_by(conversation_id=conv.id)
                      .order_by(Message.created_at.asc(), Message.id.asc())
                      .all())
-            history = [{"role": m.role, "content": m.content} for m in prior[-6:]]
-            last_user = next((m.content for m in reversed(prior) if m.role == "user"), None)
-            if last_user and len(question.split()) <= 6:
-                retrieval_query = f"{last_user} {question}"
+    if regenerate and prior:
+        # Regenerating the last answer: the model shouldn't see (or repeat) it,
+        # and the question is already the conversation's last user message.
+        if prior[-1].role == "assistant":
+            prior = prior[:-1]
+        if prior and prior[-1].role == "user" and prior[-1].content == question:
+            prior = prior[:-1]
+    history = [{"role": m.role, "content": _TAG_RE.sub("", m.content)}
+               for m in prior[-6:]]
+    retrieval_query = _retrieval_query(question, prior)
 
     hits = retrieve(kb_id, retrieval_query, top_n=10, top_k=5, use_reranker=True)
     citations = citations_from_hits(hits)
-    exam_links = find_related_exam_questions(kb_id, question)
     messages = build_messages(question, hits, history=history)
 
-    def stream():
-        full = ""
-        try:
-            for tok in chat_stream(messages, model=model):
-                full += tok
-                yield f"data: {json.dumps({'type': 'token', 'content': tok})}\n\n"
-        except Exception as e:
-            # Don't let an LLM error (e.g. Groq 429 rate limit) kill the stream —
-            # emit a readable message and still finish cleanly.
-            rate = "rate_limit" in str(e).lower() or "429" in str(e)
-            msg = ("The AI service has hit its free-tier rate limit. Please try again "
-                   "in a few minutes." if rate
-                   else "Sorry — the AI service is temporarily unavailable. Please try again.")
-            note = ("\n\n_" + msg + "_") if full.strip() else ("⚠️ " + msg)
-            full += note
-            yield f"data: {json.dumps({'type': 'token', 'content': note})}\n\n"
-        # persist with a fresh session (request session is closed by now)
+    def persist(full: str, cites: list) -> int:
+        # Persist with a fresh session (the request session is closed by now).
         s = SessionLocal()
         try:
             conv = s.get(Conversation, conversation_id) if conversation_id else None
@@ -98,15 +140,58 @@ def chat(request: Request, kb_id: int, payload: dict, db: Session = Depends(get_
                 conv = Conversation(kb_id=kb_id, title=question[:60])
                 s.add(conv)
                 s.flush()
-            s.add(Message(conversation_id=conv.id, role="user", content=question))
+            if regenerate:
+                # The new answer replaces the old one instead of stacking under it.
+                old = (s.query(Message)
+                       .filter_by(conversation_id=conv.id, role="assistant")
+                       .order_by(Message.created_at.desc(), Message.id.desc())
+                       .first())
+                if old:
+                    s.delete(old)
+            else:
+                s.add(Message(conversation_id=conv.id, role="user", content=question))
             s.add(Message(conversation_id=conv.id, role="assistant",
-                          content=full, citations=json.dumps(citations)))
+                          content=full, citations=json.dumps(cites)))
             s.commit()
-            cid = conv.id
+            return conv.id
         finally:
             s.close()
+
+    def stream():
+        full = ""
+        if not hits:
+            # Nothing relevant in the KB — answer honestly without an LLM call.
+            full = NOT_FOUND_ANSWER
+            yield f"data: {json.dumps({'type': 'token', 'content': full})}\n\n"
+        else:
+            try:
+                for tok in chat_stream(messages, model=model):
+                    full += tok
+                    yield f"data: {json.dumps({'type': 'token', 'content': tok})}\n\n"
+            except Exception as e:
+                # Don't let an LLM error (e.g. Groq 429 rate limit) kill the stream —
+                # emit a readable message and still finish cleanly.
+                logger.warning("LLM stream failed: %s", e)
+                rate = "rate_limit" in str(e).lower() or "429" in str(e)
+                msg = ("The AI service has hit its free-tier rate limit. Please try again "
+                       "in a few minutes." if rate
+                       else "Sorry — the AI service is temporarily unavailable. Please try again.")
+                note = ("\n\n_" + msg + "_") if full.strip() else ("⚠️ " + msg)
+                full += note
+                yield f"data: {json.dumps({'type': 'token', 'content': note})}\n\n"
+
+        cites = _mark_used_citations(citations, full)
+        # Related past-exam questions are nice-to-have metadata: computed after the
+        # tokens so they never delay the answer, and never allowed to break it.
+        exam_links = []
+        if hits:
+            try:
+                exam_links = find_related_exam_questions(kb_id, retrieval_query)
+            except Exception:
+                logger.warning("Exam-link lookup failed", exc_info=True)
+        cid = persist(full, cites)
         yield ("data: " + json.dumps({"type": "done", "conversation_id": cid,
-               "citations": citations, "exam_links": exam_links}) + "\n\n")
+               "citations": cites, "exam_links": exam_links}) + "\n\n")
 
     return StreamingResponse(stream(), media_type="text/event-stream")
 
@@ -135,6 +220,20 @@ def get_conversation(conv_id: int, db: Session = Depends(get_db),
                              citations=json.loads(m.citations or "[]"),
                              created_at=m.created_at) for m in msgs],
     )
+
+
+@router.patch("/conversations/{conv_id}", response_model=ConversationOut)
+def rename_conversation(conv_id: int, payload: ConversationUpdate,
+                        db: Session = Depends(get_db),
+                        user: User = Depends(get_current_user)):
+    conv = _owned_conversation_or_404(conv_id, user, db)
+    title = payload.title.strip()
+    if not title:
+        raise HTTPException(400, "title cannot be empty")
+    conv.title = title[:60]
+    db.commit()
+    db.refresh(conv)
+    return conv
 
 
 @router.delete("/conversations/{conv_id}")

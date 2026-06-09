@@ -94,6 +94,7 @@ class DocumentOut(BaseModel):
     filename: str
     doc_type: str
     status: str
+    error: str | None = None
     num_chunks: int
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
@@ -103,6 +104,10 @@ class DocumentOut(BaseModel):
 class ChatRequest(BaseModel):
     question: str
     conversation_id: int | None = None
+
+
+class ConversationUpdate(BaseModel):
+    title: str
 
 
 class ConversationOut(BaseModel):
