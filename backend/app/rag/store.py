@@ -9,7 +9,8 @@ document records and their vectors can't drift out of sync.
 
 The embedder is a module-level singleton: the model loads once per process. Each
 function opens its own short-lived session since callers don't pass one in."""
-from sqlalchemy import select, delete as sa_delete
+import re
+from sqlalchemy import select, delete as sa_delete, func, text as sa_text
 from sentence_transformers import SentenceTransformer
 from ..config import settings
 from ..database import SessionLocal
@@ -17,9 +18,19 @@ from ..models import Chunk
 
 _embedder = SentenceTransformer(settings.embed_model)
 
+# bge-*-v1.5 models are trained with an instruction prefix on the QUERY side of
+# short-query -> passage retrieval (passages are embedded bare). Skipping it
+# measurably hurts retrieval, so queries get it and documents don't.
+_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
+
 
 def embed(texts):
     return _embedder.encode(texts, normalize_embeddings=True).tolist()
+
+
+def embed_query(query: str):
+    prefix = _QUERY_PREFIX if "bge" in settings.embed_model.lower() else ""
+    return _embedder.encode([prefix + query], normalize_embeddings=True).tolist()[0]
 
 
 def _meta(c: Chunk) -> dict:
@@ -45,7 +56,7 @@ def add_chunks(kb_id: int, doc_id: int, chunks):
 
 
 def vector_search(kb_id: int, query: str, top_n=10, doc_type=None):
-    q = embed([query])[0]
+    q = embed_query(query)
     db = SessionLocal()
     try:
         dist = Chunk.embedding.cosine_distance(q).label("dist")
@@ -56,6 +67,30 @@ def vector_search(kb_id: int, query: str, top_n=10, doc_type=None):
         return [{"id": c.chunk_uid, "text": c.text, "metadata": _meta(c),
                  "score": 1.0 - float(d)}
                 for c, d in db.execute(stmt).all()]
+    finally:
+        db.close()
+
+
+def keyword_search(kb_id: int, query: str, top_n=10, doc_type=None):
+    """Sparse retrieval via Postgres full-text search (GIN-indexed, see
+    database._ensure_text_index). Terms are OR'd so a long natural-language
+    question still matches chunks containing any keyword, like BM25 would.
+    Returns [] for queries that reduce to stopwords."""
+    terms = " | ".join(set(re.findall(r"[a-z0-9]+", query.lower())))
+    if not terms:
+        return []
+    db = SessionLocal()
+    try:
+        tsv = func.to_tsvector(sa_text("'english'"), Chunk.text)
+        tsq = func.to_tsquery(sa_text("'english'"), terms)
+        rank = func.ts_rank(tsv, tsq).label("rank")
+        stmt = select(Chunk, rank).where(Chunk.kb_id == kb_id, tsv.op("@@")(tsq))
+        if doc_type:
+            stmt = stmt.where(Chunk.doc_type == doc_type)
+        stmt = stmt.order_by(rank.desc()).limit(top_n)
+        return [{"id": c.chunk_uid, "text": c.text, "metadata": _meta(c),
+                 "score": float(r)}
+                for c, r in db.execute(stmt).all()]
     finally:
         db.close()
 

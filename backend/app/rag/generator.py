@@ -1,14 +1,17 @@
 """Builds the grounded prompt. The system prompt forbids outside knowledge and
 forces citations + an explicit 'not found' answer — this is what kills
 hallucination. Sources are labeled [S1], [S2]... and echoed back as citations."""
+# The canonical honest refusal — also returned directly (no LLM call) when
+# retrieval finds nothing above the relevance floor.
+NOT_FOUND_ANSWER = "I couldn't find this in your uploaded documents."
+
 SYSTEM_PROMPT = (
     "You are StudyMate, a study assistant. Answer the student's question using "
     "ONLY the provided sources.\n"
     "Rules:\n"
     "- Use only information in the sources below. Do not use outside knowledge.\n"
     "- Cite sources inline using their tags, e.g. [S1], [S2].\n"
-    "- If the sources do not contain the answer, reply exactly: "
-    "\"I couldn't find this in your uploaded documents.\"\n"
+    f"- If the sources do not contain the answer, reply exactly: \"{NOT_FOUND_ANSWER}\"\n"
     "- Be clear and concise, like good revision notes."
 )
 

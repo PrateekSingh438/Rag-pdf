@@ -15,7 +15,10 @@ class Settings(BaseSettings):
     groq_model: str = "llama-3.1-8b-instant"  # higher free-tier limits; 70b for more quality
     embed_model: str = "BAAI/bge-small-en-v1.5"
     rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    chroma_dir: str = "./chroma_data"
+    # Reranked hits scoring below this are dropped (ms-marco cross-encoders give
+    # clearly-irrelevant pairs ~-10; on-topic pairs sit well above). An empty
+    # result then means "answer honestly: not found" without burning an LLM call.
+    rerank_score_floor: float = -8.0
     upload_dir: str = "./uploads"
     # Upload guards: reject oversized files outright, and cap how many pages get
     # the expensive OCR fallback (text-layer pages are cheap and stay uncapped).
