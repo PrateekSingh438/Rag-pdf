@@ -23,7 +23,7 @@ import numpy as np
 
 from ..config import settings
 from ..rag.chunker import chunk_document
-from ..rag.store import embed
+from ..rag.store import embed, embed_query
 from ..rag.reranker import rerank
 from ..rag.generator import build_messages
 from .corpus import CORPUS
@@ -31,8 +31,10 @@ from .corpus import CORPUS
 # Retrieval settings for the eval (top_k is the "k" in the metrics).
 TOP_N = 10
 TOP_K = 3
-# Ablation grid.
-CHUNK_SIZES = [256, 512]
+# Ablation grid. Sizes must stay inside the embedder/reranker 512-TOKEN windows
+# (~220 words max), otherwise the models silently truncate and the comparison
+# measures truncation, not chunking.
+CHUNK_SIZES = [120, 220]
 RERANKER_OPTIONS = [True, False]
 # Faithfulness is the only LLM-dependent metric; cap the sample to bound cost.
 FAITHFULNESS_SAMPLE = 5
@@ -80,7 +82,7 @@ def search(index, query: str, use_reranker: bool):
     items, matrix = index
     if matrix.shape[0] == 0:
         return []
-    q = np.asarray(embed([query])[0], dtype=np.float32)
+    q = np.asarray(embed_query(query), dtype=np.float32)
     sims = matrix @ q  # embeddings are normalized -> dot product == cosine similarity
     order = np.argsort(-sims)[:TOP_N]
     hits = [{"id": items[i]["id"], "text": items[i]["text"],
@@ -95,8 +97,11 @@ def retrieval_metrics(index, gold_counts, dataset, use_reranker):
         hits = search(index, item["question"], use_reranker)
         gold_in_topk = [i for i, h in enumerate(hits) if h["metadata"]["source_file"] == gold]
         hit_sum += 1.0 if gold_in_topk else 0.0
-        total_gold = max(1, gold_counts.get(gold, 1))
-        recall_sum += len(gold_in_topk) / total_gold
+        # Denominator capped at k: only k slots exist, so a doc with more chunks
+        # than k must not be unreachable-by-definition. Without the cap, larger
+        # chunk sizes (fewer chunks per doc) win the metric automatically.
+        total_gold = max(1, min(TOP_K, gold_counts.get(gold, 1)))
+        recall_sum += min(1.0, len(gold_in_topk) / total_gold)
         mrr_sum += 1.0 / (gold_in_topk[0] + 1) if gold_in_topk else 0.0
     n = len(dataset)
     return {"hit_rate_at_k": hit_sum / n, "recall_at_k": recall_sum / n, "mrr": mrr_sum / n}
@@ -116,10 +121,12 @@ def _llm_with_retry(messages, **kwargs):
 
 
 def faithfulness_metric(index, dataset, use_reranker):
-    """Average LLM-as-judge faithfulness over a small sample of questions."""
+    """Average LLM-as-judge faithfulness over a small sample of questions.
+    Returns None (-> null in results.json) when no API key is configured, so a
+    skipped metric can never masquerade as a 0.0 score."""
     if not settings.groq_api_key:
         print("  (no GROQ_API_KEY; skipping faithfulness)")
-        return 0.0
+        return None
     sample = dataset[:FAITHFULNESS_SAMPLE]
     total = 0.0
     for item in sample:
@@ -162,10 +169,11 @@ def run():
                 "faithfulness": faith,
             }
             runs.append(run_result)
+            faith_txt = "skipped" if faith is None else f"{faith:.3f}"
             print(f"  reranker={use_reranker!s:5}  "
                   f"recall@{TOP_K}={rm['recall_at_k']:.3f}  "
                   f"hit@{TOP_K}={rm['hit_rate_at_k']:.3f}  "
-                  f"MRR={rm['mrr']:.3f}  faithfulness={faith:.3f}")
+                  f"MRR={rm['mrr']:.3f}  faithfulness={faith_txt}")
 
     results = {
         "k": TOP_K,
