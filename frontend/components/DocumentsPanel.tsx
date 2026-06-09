@@ -20,6 +20,7 @@ export function DocumentsPanel({
   const [docs, setDocs] = useState<api.Doc[]>([]);
   const [docType, setDocType] = useState<"notes" | "exam">("notes");
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState<{ name: string; pct: number } | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,7 +52,15 @@ export function DocumentsPanel({
       setError(null);
       try {
         for (const file of Array.from(files)) {
-          await api.uploadDocument(token, kbId, file, docType);
+          // Reject oversized files before any bytes leave the browser.
+          if (file.size > api.MAX_UPLOAD_MB * 1024 * 1024) {
+            toast(`${file.name} is too large (max ${api.MAX_UPLOAD_MB} MB)`, "error");
+            continue;
+          }
+          setProgress({ name: file.name, pct: 0 });
+          await api.uploadDocument(token, kbId, file, docType, (pct) =>
+            setProgress({ name: file.name, pct }),
+          );
         }
         await refresh();
         onChange?.();
@@ -61,6 +70,7 @@ export function DocumentsPanel({
         toast(msg, "error");
       } finally {
         setUploading(false);
+        setProgress(null);
       }
     },
     [token, kbId, docType, refresh, onChange, toast],
@@ -73,7 +83,12 @@ export function DocumentsPanel({
   }
 
   async function remove(docId: number) {
-    await api.deleteDocument(token, kbId, docId);
+    try {
+      await api.deleteDocument(token, kbId, docId);
+    } catch {
+      toast("Couldn't delete the document", "error");
+      return;
+    }
     refresh();
     onChange?.();
   }
@@ -132,8 +147,22 @@ export function DocumentsPanel({
           onChange={(e) => upload(e.target.files)}
         />
         {uploading ? (
-          <span className="inline-flex items-center gap-2 text-slate-500">
-            <Spinner /> Uploading…
+          <span className="inline-flex w-full flex-col items-center gap-2 text-slate-500">
+            <span className="inline-flex items-center gap-2">
+              <Spinner />
+              <span className="max-w-48 truncate">
+                Uploading {progress ? `${progress.name}…` : "…"}
+              </span>
+              {progress && <span className="tabular-nums">{progress.pct}%</span>}
+            </span>
+            {progress && (
+              <span className="h-1.5 w-full max-w-60 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                <span
+                  className="block h-full rounded-full bg-indigo-500 transition-[width]"
+                  style={{ width: `${progress.pct}%` }}
+                />
+              </span>
+            )}
           </span>
         ) : (
           <span className="inline-flex flex-col items-center gap-1.5 text-slate-500">
@@ -163,6 +192,11 @@ export function DocumentsPanel({
                   <span className="capitalize">{d.doc_type}</span>
                   {d.status === "ready" && ` · ${d.num_chunks} chunks`}
                 </p>
+                {d.status === "failed" && d.error && (
+                  <p className="mt-0.5 truncate text-xs text-red-500 dark:text-red-400" title={d.error}>
+                    {d.error}
+                  </p>
+                )}
               </div>
               <div className="ml-2 flex items-center gap-2">
                 {d.status === "processing" ? (
@@ -179,6 +213,15 @@ export function DocumentsPanel({
                     title="Retry ingestion (re-extract & re-embed this PDF)"
                   >
                     <IconRefresh size={13} /> Retry
+                  </button>
+                )}
+                {d.status === "ready" && (
+                  <button
+                    onClick={() => retry(d.id)}
+                    className="grid h-7 w-7 place-items-center rounded text-slate-300 hover:bg-slate-100 hover:text-indigo-600 dark:hover:bg-slate-700"
+                    title="Re-process (re-chunk & re-embed with current settings)"
+                  >
+                    <IconRefresh size={14} />
                   </button>
                 )}
                 <button
