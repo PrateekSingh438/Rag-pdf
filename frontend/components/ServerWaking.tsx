@@ -38,8 +38,8 @@ export function ServerWaking() {
 
   if (!waking) return null;
   return (
-    <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-2 bg-amber-500 px-4 py-2 text-center text-sm font-medium text-white shadow-md">
-      <Spinner className="h-3.5 w-3.5 border-white/40 border-t-white" />
+    <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-2 border-b border-[var(--glass-border)] bg-[var(--glass-strong)] px-4 py-2 text-center text-sm font-medium text-[var(--foreground)] backdrop-blur-xl">
+      <Spinner className="h-3.5 w-3.5" />
       Waking up the server — this can take up to a minute on the free tier…
     </div>
   );

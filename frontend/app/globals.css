@@ -3,24 +3,121 @@
 /* Class-based dark mode: `dark:` utilities apply when an ancestor has .dark. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* StudyMate uses a clean, light study-app theme (dark overrides below). */
+/* ──────────────────────────────────────────────────────────────────────────
+   Design tokens — "Aurora" : a vivid, motion-rich, glassmorphic system.
+   Electric blue → cyan → violet, frosted glass surfaces floating over a slowly
+   morphing aurora mesh. Dark overrides follow.
+   ────────────────────────────────────────────────────────────────────────── */
 :root {
-  --background: #f7f8fa;
-  --foreground: #0f172a;
+  --background: #fbfbfd;
+  --foreground: #1d1d1f;
+
+  --muted-foreground: #6e6e73;
+
+  --surface: #ffffff;
+  --glass: rgba(255, 255, 255, 0.72);
+  --glass-strong: rgba(255, 255, 255, 0.86);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --hairline: rgba(0, 0, 0, 0.1);
+
+  /* Monochrome "ink" spectrum — black/white, Apple-style. */
+  --primary: #1d1d1f;
+  --primary-2: #424245;
+  --primary-3: #6e6e73;
+
+  /* Primary action surface + its text, and a neutral soft fill. */
+  --btn: #1d1d1f;
+  --on-btn: #ffffff;
+  --soft: rgba(0, 0, 0, 0.05);
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px -14px rgba(0, 0, 0, 0.18);
+  --shadow-md: 0 18px 48px -18px rgba(0, 0, 0, 0.22), 0 4px 12px -4px rgba(15, 23, 42, 0.1);
+  --glow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 10px 30px -8px rgba(0, 0, 0, 0.16);
+  --glow-strong: 0 0 30px -2px rgba(0, 0, 0, 0.2), 0 0 60px -10px rgba(0, 0, 0, 0.12);
 }
 
 .dark {
-  --background: #0b1120;
-  --foreground: #e2e8f0;
+  --background: #000000;
+  --foreground: #f5f5f7;
+
+  --muted-foreground: #86868b;
+
+  --surface: #1d1d1f;
+  --glass: rgba(29, 29, 31, 0.6);
+  --glass-strong: rgba(29, 29, 31, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --hairline: rgba(255, 255, 255, 0.1);
+
+  --primary: #f5f5f7;
+  --primary-2: #d2d2d7;
+  --primary-3: #86868b;
+
+  --btn: #f5f5f7;
+  --on-btn: #000000;
+  --soft: rgba(255, 255, 255, 0.08);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 40px -18px rgba(0, 0, 0, 0.7);
+  --shadow-md: 0 26px 60px -22px rgba(0, 0, 0, 0.75), 0 0 30px -12px rgba(0, 0, 0, 0.5);
+  --glow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 12px 36px -8px rgba(0, 0, 0, 0.6);
+  --glow-strong: 0 0 36px -2px rgba(255, 255, 255, 0.14), 0 0 70px -12px rgba(0, 0, 0, 0.5);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-sora);
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+   Apple-style landing palette (used by app/page.tsx). Monochrome; flips with the
+   app's .dark theme so the landing supports both light and dark mode.
+   ────────────────────────────────────────────────────────────────────────── */
+.lp {
+  --lp-bg: #fbfbfd;
+  --lp-bg-alt: #f2f2f4;
+  --lp-card: #ffffff;
+  --lp-card-2: #f4f4f6;
+  --lp-fg: #1d1d1f;
+  --lp-muted: #6e6e73;
+  --lp-eyebrow: #86868b;
+  --lp-hair: rgba(0, 0, 0, 0.1);
+  --lp-soft: rgba(0, 0, 0, 0.05);
+  --lp-bubble: #1d1d1f;
+  --lp-bubble-fg: #ffffff;
+  --lp-btn: #1d1d1f;
+  --lp-btn-fg: #ffffff;
+  --lp-glow: rgba(0, 0, 0, 0.06);
+  --lp-glow-solid: #1d1d1f;
+  --lp-scan: rgba(0, 0, 0, 0.22);
+  --lp-nav: rgba(251, 251, 253, 0.72);
+}
+.dark .lp {
+  --lp-bg: #000000;
+  --lp-bg-alt: #0a0a0c;
+  --lp-card: #1d1d1f;
+  --lp-card-2: #0a0a0c;
+  --lp-fg: #f5f5f7;
+  --lp-muted: #86868b;
+  --lp-eyebrow: #a1a1a6;
+  --lp-hair: rgba(255, 255, 255, 0.1);
+  --lp-soft: rgba(255, 255, 255, 0.04);
+  --lp-bubble: #f5f5f7;
+  --lp-bubble-fg: #000000;
+  --lp-btn: #f5f5f7;
+  --lp-btn-fg: #000000;
+  --lp-glow: rgba(255, 255, 255, 0.1);
+  --lp-glow-solid: #ffffff;
+  --lp-scan: rgba(255, 255, 255, 0.33);
+  --lp-nav: rgba(0, 0, 0, 0.6);
+}
+
+html {
+  scroll-behavior: smooth;
+}
 html,
 body {
   height: 100%;
@@ -30,9 +127,222 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Smooth blinking cursor for the streaming assistant message. */
+/* ──────────────────────────────────────────────────────────────────────────
+   Aurora mesh — fixed, slowly morphing blobs (blue · cyan · violet · indigo).
+   Rendered once in the root layout. Motion disabled for reduced-motion.
+   ────────────────────────────────────────────────────────────────────────── */
+.aurora {
+  position: fixed;
+  inset: -20%;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+}
+.aurora > span {
+  position: absolute;
+  display: block;
+  border-radius: 9999px;
+  filter: blur(80px);
+  will-change: transform;
+  opacity: 0.85;
+}
+.aurora .b1 {
+  width: 46rem;
+  height: 46rem;
+  top: -8rem;
+  left: -6rem;
+  background: radial-gradient(circle at center, rgba(120, 120, 128, 0.16), transparent 66%);
+  animation: drift1 22s ease-in-out infinite alternate;
+}
+.aurora .b2 {
+  width: 40rem;
+  height: 40rem;
+  top: -4rem;
+  right: -8rem;
+  background: radial-gradient(circle at center, rgba(142, 142, 147, 0.14), transparent 66%);
+  animation: drift2 27s ease-in-out infinite alternate;
+}
+.aurora .b3 {
+  width: 42rem;
+  height: 42rem;
+  bottom: -12rem;
+  left: 28%;
+  background: radial-gradient(circle at center, rgba(99, 99, 102, 0.16), transparent 66%);
+  animation: drift3 31s ease-in-out infinite alternate;
+}
+.aurora .b4 {
+  width: 32rem;
+  height: 32rem;
+  bottom: 6rem;
+  right: 14%;
+  background: radial-gradient(circle at center, rgba(142, 142, 147, 0.12), transparent 68%);
+  animation: drift1 35s ease-in-out infinite alternate-reverse;
+}
+.dark .aurora > span {
+  opacity: 0.6;
+}
+@keyframes drift1 {
+  to {
+    transform: translate(8rem, 5rem) scale(1.18) rotate(8deg);
+  }
+}
+@keyframes drift2 {
+  to {
+    transform: translate(-7rem, 6rem) scale(1.12) rotate(-6deg);
+  }
+}
+@keyframes drift3 {
+  to {
+    transform: translate(-5rem, -7rem) scale(1.22) rotate(5deg);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Glass surfaces & helpers.
+   ────────────────────────────────────────────────────────────────────────── */
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(16px) saturate(170%);
+  -webkit-backdrop-filter: blur(16px) saturate(170%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-sm);
+}
+.glass-strong {
+  background: var(--glass-strong);
+  backdrop-filter: blur(22px) saturate(190%);
+  -webkit-backdrop-filter: blur(22px) saturate(190%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Interactive card: rises, lifts and gains a colored glow on hover. */
+.lift {
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.lift:hover {
+  transform: translateY(-5px) scale(1.012);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(120, 120, 128, 0.45);
+}
+
+/* Animated brand gradient text. */
+.text-gradient {
+  background-image: linear-gradient(110deg, var(--foreground), var(--primary-3) 50%, var(--foreground));
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: textshine 7s linear infinite;
+}
+@keyframes textshine {
+  to {
+    background-position: 250% center;
+  }
+}
+
+/* Glows. */
+.glow {
+  box-shadow: var(--glow);
+}
+.animate-glow {
+  animation: pulseglow 3.2s ease-in-out infinite;
+}
+@keyframes pulseglow {
+  0%,
+  100% {
+    box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 12px 40px -6px rgba(0, 0, 0, 0.4), 0 0 28px -6px rgba(120, 120, 128, 0.4);
+  }
+}
+
+/* Moving sheen for gradient buttons. */
+.sheen {
+  position: relative;
+  overflow: hidden;
+}
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.4) 50%, transparent 65%);
+  transform: translateX(-160%);
+  transition: transform 0.7s ease;
+  pointer-events: none;
+}
+.sheen:hover::after {
+  transform: translateX(160%);
+}
+
+/* Entrance + scroll reveal. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  will-change: opacity, transform;
+}
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Gentle float for hero decorations. */
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+.animate-float {
+  animation: floaty 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .aurora > span,
+  .animate-rise,
+  .animate-float,
+  .animate-glow,
+  .text-gradient {
+    animation: none !important;
+  }
+  .lift,
+  .reveal,
+  .sheen::after {
+    transition: none !important;
+  }
+  .lift:hover {
+    transform: none;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Blinking cursor for the streaming assistant message. */
 @keyframes blink {
   0%,
   100% {
@@ -45,10 +355,15 @@ body {
 .streaming-cursor::after {
   content: "▍";
   margin-left: 1px;
+  color: var(--primary);
   animation: blink 1s step-end infinite;
 }
 
 /* Thin, unobtrusive scrollbars for panels. */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
 .scroll-thin::-webkit-scrollbar {
   width: 8px;
 }
@@ -57,8 +372,10 @@ body {
   border-radius: 9999px;
 }
 
-/* Markdown answer styling (Tailwind preflight strips defaults, so restore them
-   scoped to .md). Used by MarkdownMessage for rendered chat answers. */
+/* ──────────────────────────────────────────────────────────────────────────
+   Markdown answer styling (Tailwind preflight strips defaults, so restore them
+   scoped to .md). Used by MarkdownMessage for rendered chat answers.
+   ────────────────────────────────────────────────────────────────────────── */
 .md {
   font-size: 0.875rem;
   line-height: 1.65;
@@ -91,6 +408,7 @@ body {
 .md h2,
 .md h3,
 .md h4 {
+  font-family: var(--font-sora), var(--font-geist-sans), sans-serif;
   font-weight: 600;
   line-height: 1.3;
   margin: 0.8rem 0 0.4rem;
@@ -111,12 +429,12 @@ body {
   font-style: italic;
 }
 .md a {
-  color: #4f46e5;
+  color: #1d1d1f;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 .md a:hover {
-  color: #4338ca;
+  color: #6e6e73;
 }
 .md li::marker {
   color: #94a3b8;
@@ -147,8 +465,8 @@ body {
   font-size: 0.85em;
 }
 .md blockquote {
-  border-left: 3px solid #818cf8;
-  background: #f5f6ff;
+  border-left: 3px solid #86868b;
+  background: #f2f2f4;
   padding: 0.4rem 0.85rem;
   border-radius: 0 0.4rem 0.4rem 0;
   color: #475569;
@@ -193,10 +511,10 @@ body {
   color: #cbd5e1;
 }
 .dark .md a {
-  color: #a5b4fc;
+  color: #f5f5f7;
 }
 .dark .md a:hover {
-  color: #c7d2fe;
+  color: #86868b;
 }
 .dark .md code {
   background: #1e293b;
@@ -208,8 +526,8 @@ body {
   border-color: #1e293b;
 }
 .dark .md blockquote {
-  border-left-color: #6366f1;
-  background: #1e1b4b33;
+  border-left-color: #6e6e73;
+  background: rgba(255, 255, 255, 0.06);
   color: #94a3b8;
 }
 .dark .md table {
@@ -227,6 +545,9 @@ body {
 }
 .dark .md tbody tr:nth-child(even) {
   background: #0f172a66;
+}
+.dark .scroll-thin {
+  scrollbar-color: #475569 transparent;
 }
 .dark .scroll-thin::-webkit-scrollbar-thumb {
   background: #475569;

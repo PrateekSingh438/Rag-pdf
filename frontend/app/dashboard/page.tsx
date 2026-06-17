@@ -9,6 +9,7 @@ import { useRequireAuth } from "@/lib/auth";
 import * as api from "@/lib/api";
 import { NavBar } from "@/components/NavBar";
 import { Button, Input, Card, Spinner } from "@/components/ui";
+import { Reveal, CountUp } from "@/components/motion";
 import {
   IconFlame, IconMessage, IconClipboard, IconBook, IconSparkles,
   IconArrowRight, IconTarget, IconTrash, IconPlus,
@@ -90,10 +91,10 @@ export default function DashboardPage() {
       <NavBar />
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-            Welcome back{firstName ? `, ${firstName}` : ""}
+          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            Welcome back{firstName ? <>, <span className="text-gradient">{firstName}</span></> : ""}
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
             Your study companion — pick up where you left off, or start a new course.
           </p>
         </div>
@@ -101,8 +102,8 @@ export default function DashboardPage() {
         {/* Stats strip */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard icon={IconFlame} tint="orange" label="Day streak" value={stats?.current_streak ?? 0} />
-          <StatCard icon={IconMessage} tint="indigo" label="Questions asked" value={stats?.questions_asked ?? 0} />
-          <StatCard icon={IconClipboard} tint="violet" label="Quizzes taken" value={stats?.quizzes_taken ?? 0} />
+          <StatCard icon={IconMessage} tint="blue" label="Questions asked" value={stats?.questions_asked ?? 0} />
+          <StatCard icon={IconClipboard} tint="sky" label="Quizzes taken" value={stats?.quizzes_taken ?? 0} />
           <StatCard icon={IconBook} tint="emerald" label="Documents" value={stats?.documents_uploaded ?? 0} />
         </div>
 
@@ -139,7 +140,7 @@ export default function DashboardPage() {
             {stats.weak_topics.length > 0 && (
               <Card className="p-5">
                 <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  <IconTarget size={16} className="text-rose-500" /> Focus areas
+                  <IconTarget size={16} className="text-[var(--primary)]" /> Focus areas
                 </h2>
                 <p className="mb-3 text-xs text-slate-400">Topics with your lowest quiz scores</p>
                 <ul className="space-y-2">
@@ -158,7 +159,7 @@ export default function DashboardPage() {
         )}
 
         {/* Knowledge bases */}
-        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Your knowledge bases</h2>
+        <h2 className="mb-3 font-display text-xl font-semibold text-slate-900 dark:text-slate-100">Your knowledge bases</h2>
         <Card className="mb-6 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Input
@@ -176,42 +177,44 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/50">{error}</p>}
+        {error && <p className="mb-4 rounded-xl bg-red-500/10 px-3 py-2 text-sm text-red-600 ring-1 ring-inset ring-red-500/20 dark:text-red-300">{error}</p>}
 
         {fetching ? (
           <div className="grid place-items-center py-16">
             <Spinner />
           </div>
         ) : kbs.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-300 py-16 text-center dark:border-slate-700">
-            <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800">
-              <IconBook size={24} />
+          <div className="rounded-2xl border border-dashed border-slate-300 py-16 text-center dark:border-slate-700">
+            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-[var(--btn)] text-[var(--on-btn)] shadow-lg shadow-black/15 ring-1 ring-white/20">
+              <IconBook size={26} />
             </div>
             <p className="text-slate-600 dark:text-slate-300">No knowledge bases yet.</p>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Create one above, or click <strong>Try a sample course</strong> to explore with demo content.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {kbs.map((kb) => (
-              <Card key={kb.id} className="group flex flex-col p-5 transition-all hover:border-indigo-200 hover:shadow-md dark:hover:border-indigo-900">
+            {kbs.map((kb, i) => (
+              <Reveal key={kb.id} delay={i * 60}>
+              <Card className="group lift flex h-full flex-col p-5">
                 <Link href={`/kb/${kb.id}`} className="flex-1">
                   <div className="mb-2 flex items-center gap-2.5">
-                    <span className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
-                      <IconBook size={18} />
+                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--btn)] text-[var(--on-btn)] shadow-md shadow-black/15 ring-1 ring-white/20 transition-transform duration-300 group-hover:scale-110">
+                      <IconBook size={19} />
                     </span>
-                    <h3 className="text-lg font-semibold text-slate-900 group-hover:text-indigo-600 dark:text-slate-100 dark:group-hover:text-indigo-400">{kb.name}</h3>
+                    <h3 className="font-display text-lg font-semibold text-slate-900 transition-colors group-hover:text-[var(--primary)] dark:text-slate-100 dark:group-hover:text-[var(--primary)]">{kb.name}</h3>
                   </div>
                   <p className="text-xs text-slate-400">Created {new Date(kb.created_at).toLocaleDateString()}</p>
                 </Link>
-                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
-                  <Link href={`/kb/${kb.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:gap-1.5 dark:text-indigo-400">
+                <div className="mt-4 flex items-center justify-between border-t border-(--hairline) pt-3">
+                  <Link href={`/kb/${kb.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-[var(--primary)] transition-all hover:gap-1.5 dark:text-[var(--primary)]">
                     Open workspace <IconArrowRight size={15} />
                   </Link>
-                  <button onClick={() => removeKb(kb.id)} title="Delete" className="grid h-8 w-8 place-items-center rounded-md text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50">
+                  <button onClick={() => removeKb(kb.id)} title="Delete" className="grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-600">
                     <IconTrash size={16} />
                   </button>
                 </div>
               </Card>
+              </Reveal>
             ))}
           </div>
         )}
@@ -221,20 +224,22 @@ export default function DashboardPage() {
 }
 
 const TINTS: Record<string, string> = {
-  orange: "bg-orange-50 text-orange-600 dark:bg-orange-950/50 dark:text-orange-400",
-  indigo: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400",
-  violet: "bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400",
-  emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400",
+  orange: "bg-[var(--btn)] shadow-black/15",
+  blue: "bg-[var(--btn)] shadow-black/15",
+  sky: "bg-[var(--btn)] shadow-black/15",
+  emerald: "bg-[var(--btn)] shadow-black/15",
 };
 
 function StatCard({ icon: Icon, tint, label, value }: { icon: ComponentType<{ size?: number }>; tint: string; label: string; value: number }) {
   return (
-    <Card className="flex items-center gap-3 p-4">
-      <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg ${TINTS[tint]}`}>
+    <Card className="group lift flex items-center gap-3 p-4">
+      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[var(--on-btn)] shadow-lg ring-1 ring-white/20 transition-transform duration-300 group-hover:scale-110 ${TINTS[tint]}`}>
         <Icon size={20} />
       </span>
       <div className="min-w-0">
-        <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{value}</p>
+        <p className="font-display text-2xl font-bold text-slate-900 dark:text-slate-100">
+          <CountUp value={value} />
+        </p>
         <p className="truncate text-xs text-slate-500 dark:text-slate-400">{label}</p>
       </div>
     </Card>

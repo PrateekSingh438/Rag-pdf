@@ -105,15 +105,15 @@ export function DocumentsPanel({
   return (
     <div className="flex h-full flex-col">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Documents</h2>
-        <div className="inline-flex rounded-lg border border-slate-300 p-0.5 text-xs dark:border-slate-600">
+        <h2 className="font-display text-sm font-semibold text-slate-900 dark:text-slate-100">Documents</h2>
+        <div className="inline-flex rounded-xl border border-slate-300/70 bg-white/50 p-0.5 text-xs backdrop-blur-sm dark:border-slate-600/70 dark:bg-slate-800/40">
           {(["notes", "exam"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setDocType(t)}
-              className={`rounded-md px-2.5 py-1 font-medium capitalize transition-colors ${
+              className={`cursor-pointer rounded-lg px-2.5 py-1 font-medium capitalize transition-all ${
                 docType === t
-                  ? "bg-indigo-600 text-white"
+                  ? "bg-[var(--btn)] text-[var(--on-btn)] shadow-sm shadow-black/15"
                   : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
               }`}
             >
@@ -132,10 +132,10 @@ export function DocumentsPanel({
         onDragLeave={() => setDragOver(false)}
         onDrop={onDrop}
         onClick={() => inputRef.current?.click()}
-        className={`mb-3 cursor-pointer rounded-lg border-2 border-dashed px-4 py-6 text-center text-sm transition-colors ${
+        className={`mb-3 cursor-pointer rounded-xl border-2 border-dashed px-4 py-6 text-center text-sm transition-colors ${
           dragOver
-            ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/40"
-            : "border-slate-300 hover:border-indigo-300 dark:border-slate-600"
+            ? "border-[var(--hairline)] bg-[var(--soft)]"
+            : "border-slate-300 hover:border-[var(--hairline)] hover:bg-[var(--soft)] dark:border-slate-600"
         }`}
       >
         <input
@@ -158,7 +158,7 @@ export function DocumentsPanel({
             {progress && (
               <span className="h-1.5 w-full max-w-60 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
                 <span
-                  className="block h-full rounded-full bg-indigo-500 transition-[width]"
+                  className="block h-full rounded-full bg-[var(--btn)] transition-[width]"
                   style={{ width: `${progress.pct}%` }}
                 />
               </span>
@@ -167,13 +167,13 @@ export function DocumentsPanel({
         ) : (
           <span className="inline-flex flex-col items-center gap-1.5 text-slate-500">
             <IconUpload size={22} className="text-slate-400" />
-            <span>Drop a <span className="font-medium capitalize text-indigo-600">{docType}</span> PDF or image here, or click to browse</span>
+            <span>Drop a <span className="font-medium capitalize text-[var(--primary)]">{docType}</span> PDF or image here, or click to browse</span>
             <span className="text-xs text-slate-400">PDF, JPG, PNG · max 25&nbsp;MB — scanned pages &amp; photos are OCR&apos;d automatically</span>
           </span>
         )}
       </div>
 
-      {error && <p className="mb-2 rounded bg-red-50 px-2 py-1 text-xs text-red-600">{error}</p>}
+      {error && <p className="mb-2 rounded-lg bg-red-500/10 px-2 py-1 text-xs text-red-600 ring-1 ring-inset ring-red-500/20 dark:text-red-300">{error}</p>}
 
       <div className="scroll-thin flex-1 space-y-2 overflow-y-auto">
         {docs.length === 0 ? (
@@ -182,7 +182,7 @@ export function DocumentsPanel({
           docs.map((d) => (
             <div
               key={d.id}
-              className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800/60"
+              className="flex items-center justify-between rounded-xl border border-slate-200/70 bg-white/60 px-3 py-2 backdrop-blur-sm transition-colors hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800/50"
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100" title={d.filename}>
@@ -209,7 +209,7 @@ export function DocumentsPanel({
                 {d.status === "failed" && (
                   <button
                     onClick={() => retry(d.id)}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                    className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-[var(--primary)] hover:text-[var(--primary)] dark:text-[var(--primary)]"
                     title="Retry ingestion (re-extract & re-embed this PDF)"
                   >
                     <IconRefresh size={13} /> Retry
@@ -218,7 +218,7 @@ export function DocumentsPanel({
                 {d.status === "ready" && (
                   <button
                     onClick={() => retry(d.id)}
-                    className="grid h-7 w-7 place-items-center rounded text-slate-300 hover:bg-slate-100 hover:text-indigo-600 dark:hover:bg-slate-700"
+                    className="grid h-7 w-7 cursor-pointer place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-900/5 hover:text-[var(--primary)] dark:hover:bg-white/10"
                     title="Re-process (re-chunk & re-embed with current settings)"
                   >
                     <IconRefresh size={14} />
@@ -226,7 +226,7 @@ export function DocumentsPanel({
                 )}
                 <button
                   onClick={() => remove(d.id)}
-                  className="grid h-7 w-7 place-items-center rounded text-slate-300 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50"
+                  className="grid h-7 w-7 cursor-pointer place-items-center rounded-lg text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-600"
                   title="Delete document"
                 >
                   <IconX size={15} />

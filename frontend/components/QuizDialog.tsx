@@ -64,8 +64,8 @@ export function QuizDialog({
   function optionClass(qi: number, oi: number, q: QuizQuestion) {
     if (!submitted) {
       return answers[qi] === oi
-        ? "border-indigo-500 bg-indigo-50 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
-        : "border-slate-200 hover:border-indigo-300 dark:border-slate-600 dark:text-slate-200";
+        ? "border-[var(--hairline)] bg-[var(--soft)] text-[var(--primary)] dark:bg-[var(--soft)] dark:text-[var(--primary)]"
+        : "border-slate-200 hover:border-[var(--hairline)] dark:border-slate-600 dark:text-slate-200";
     }
     if (oi === q.answer_index) return "border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200";
     if (answers[qi] === oi) return "border-red-400 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300";
@@ -73,14 +73,14 @@ export function QuizDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-slate-900/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-40 grid place-items-center bg-slate-900/50 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-2xl flex-col rounded-xl bg-white shadow-xl dark:bg-slate-800"
+        className="animate-rise flex max-h-[88vh] w-full max-w-2xl flex-col rounded-2xl border border-white/50 bg-white/90 shadow-2xl backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/85"
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
-          <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
-            <IconClipboard size={18} className="text-indigo-500" /> Quiz
+          <h2 className="flex items-center gap-2 font-display text-base font-semibold text-slate-900 dark:text-slate-100">
+            <IconClipboard size={18} className="text-[var(--primary)]" /> Quiz
           </h2>
           <button onClick={onClose} title="Close" className="grid h-8 w-8 place-items-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700">
             <IconX size={16} />
@@ -107,7 +107,7 @@ export function QuizDialog({
               {busy ? <Spinner className="border-white/40 border-t-white" /> : questions ? "Regenerate" : "Start"}
             </Button>
           </div>
-          {error && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+          {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600 ring-1 ring-inset ring-red-500/20 dark:text-red-300">{error}</p>}
         </div>
 
         {questions && (

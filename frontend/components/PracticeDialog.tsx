@@ -41,14 +41,14 @@ export function PracticeDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-slate-900/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-40 grid place-items-center bg-slate-900/50 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[85vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-xl dark:bg-slate-800"
+        className="animate-rise flex max-h-[85vh] w-full max-w-lg flex-col rounded-2xl border border-white/50 bg-white/90 shadow-2xl backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/85"
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
-          <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
-            <IconSparkles size={18} className="text-indigo-500" /> Generate practice questions
+          <h2 className="flex items-center gap-2 font-display text-base font-semibold text-slate-900 dark:text-slate-100">
+            <IconSparkles size={18} className="text-[var(--primary)]" /> Generate practice questions
           </h2>
           <button onClick={onClose} title="Close" className="grid h-8 w-8 place-items-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700">
             <IconX size={16} />
@@ -75,7 +75,7 @@ export function PracticeDialog({
               {busy ? <Spinner className="border-white/40 border-t-white" /> : "Generate"}
             </Button>
           </div>
-          {error && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+          {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600 ring-1 ring-inset ring-red-500/20 dark:text-red-300">{error}</p>}
         </div>
 
         {(busy || result) && (

@@ -13,7 +13,7 @@ import { useToast } from "./Toast";
 import {
   IconTarget, IconCalendar, IconSparkles, IconClipboard, IconChart,
   IconPlus, IconX, IconChevronDown, IconSend, IconCpu, IconCheck,
-  IconStop, IconMenu, IconPencil, IconSearch,
+  IconStop, IconMenu, IconPencil, IconSearch, IconMessage,
 } from "./icons";
 
 const MODEL_STORAGE_KEY = "sm_model";
@@ -318,7 +318,7 @@ export function ChatPanel({
           }}
           className={`group flex cursor-pointer items-center justify-between rounded-lg px-2.5 py-2 text-sm ${
             activeId === c.id
-              ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
+              ? "bg-[var(--soft)] text-[var(--primary)] dark:bg-[var(--soft)] dark:text-[var(--primary)]"
               : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
           }`}
         >
@@ -334,7 +334,7 @@ export function ChatPanel({
                 if (e.key === "Enter") commitRename();
                 if (e.key === "Escape") setEditingId(null);
               }}
-              className="w-full rounded border border-indigo-300 bg-white px-1.5 py-0.5 text-sm text-slate-800 outline-none dark:border-indigo-700 dark:bg-slate-900 dark:text-slate-100"
+              className="w-full rounded border border-[var(--hairline)] bg-white px-1.5 py-0.5 text-sm text-slate-800 outline-none dark:border-[var(--hairline)] dark:bg-slate-900 dark:text-slate-100"
             />
           ) : (
             <>
@@ -347,7 +347,7 @@ export function ChatPanel({
                   onClick={(e) => startRename(c, e)}
                   title="Rename conversation"
                   aria-label="Rename conversation"
-                  className="grid h-6 w-6 place-items-center rounded text-slate-300 opacity-0 hover:text-indigo-600 group-hover:opacity-100 dark:text-slate-500 dark:hover:text-indigo-400"
+                  className="grid h-6 w-6 place-items-center rounded text-slate-300 opacity-0 hover:text-[var(--primary)] group-hover:opacity-100 dark:text-slate-500 dark:hover:text-[var(--primary)]"
                 >
                   <IconPencil size={13} />
                 </button>
@@ -379,7 +379,7 @@ export function ChatPanel({
         value={convFilter}
         onChange={(e) => setConvFilter(e.target.value)}
         placeholder="Search chats"
-        className="w-full rounded-lg border border-slate-200 bg-transparent py-1.5 pl-8 pr-2 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-indigo-300 dark:border-slate-700 dark:text-slate-200 dark:focus:border-indigo-700"
+        className="w-full rounded-lg border border-slate-200 bg-transparent py-1.5 pl-8 pr-2 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-[var(--hairline)] dark:border-slate-700 dark:text-slate-200 dark:focus:border-[var(--hairline)]"
       />
     </div>
   );
@@ -444,7 +444,7 @@ export function ChatPanel({
             >
               <IconMenu size={18} />
             </button>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Chat</h2>
+            <h2 className="font-display text-sm font-semibold text-slate-900 dark:text-slate-100">Chat</h2>
           </div>
           <div className="flex items-center gap-2">
             {/* Model picker */}
@@ -457,14 +457,14 @@ export function ChatPanel({
                   aria-expanded={modelOpen}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
                 >
-                  <IconCpu size={15} className="text-indigo-500" />
+                  <IconCpu size={15} className="text-[var(--primary)]" />
                   <span className="hidden max-w-28 truncate sm:inline">{currentModel?.label || "Model"}</span>
                   <IconChevronDown size={14} className={`transition-transform ${modelOpen ? "rotate-180" : ""}`} />
                 </button>
                 {modelOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setModelOpen(false)} />
-                    <div role="menu" className="absolute right-0 z-20 mt-1 w-60 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                    <div role="menu" className="glass-strong absolute right-0 z-20 mt-1.5 w-60 overflow-hidden rounded-xl py-1">
                       {models.map((m) => (
                         <button
                           key={m.id}
@@ -473,7 +473,7 @@ export function ChatPanel({
                           onClick={() => pickModel(m.id)}
                           className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700"
                         >
-                          <IconCheck size={15} className={`mt-0.5 shrink-0 ${m.id === model ? "text-indigo-600" : "text-transparent"}`} />
+                          <IconCheck size={15} className={`mt-0.5 shrink-0 ${m.id === model ? "text-[var(--primary)]" : "text-transparent"}`} />
                           <span className="min-w-0">
                             <span className="block text-sm font-medium text-slate-800 dark:text-slate-100">{m.label}</span>
                             <span className="block text-xs text-slate-400">{m.description}</span>
@@ -498,7 +498,7 @@ export function ChatPanel({
             {toolsOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setToolsOpen(false)} />
-                <div role="menu" className="absolute right-0 z-20 mt-1 w-48 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                <div role="menu" className="glass-strong absolute right-0 z-20 mt-1.5 w-48 overflow-hidden rounded-xl py-1">
                   {tools.map(({ label, icon: Icon, fn }) => (
                     <button
                       key={label}
@@ -509,7 +509,7 @@ export function ChatPanel({
                       }}
                       className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700"
                     >
-                      <Icon size={16} className="text-indigo-500" /> {label}
+                      <Icon size={16} className="text-[var(--primary)]" /> {label}
                     </button>
                   ))}
                 </div>
@@ -522,14 +522,17 @@ export function ChatPanel({
         <div ref={scrollRef} onScroll={onThreadScroll} className="scroll-thin flex-1 space-y-4 overflow-y-auto p-4">
           {messages.length === 0 ? (
             <div className="grid h-full place-items-center text-center">
-              <div className="max-w-sm text-slate-400">
-                <p className="text-base font-medium text-slate-500">Ask a question</p>
-                <p className="mt-1 text-sm">
+              <div className="max-w-sm">
+                <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-[var(--btn)] text-[var(--on-btn)] shadow-lg shadow-black/15 ring-1 ring-white/20">
+                  <IconMessage size={26} />
+                </div>
+                <p className="font-display text-lg font-semibold text-slate-700 dark:text-slate-200">Ask a question</p>
+                <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
                   Answers come only from this knowledge base&apos;s documents, with citations and links to past exam questions.
                 </p>
-                <p className="mt-3 text-xs">
-                  Tip: press <kbd className="rounded border border-slate-300 px-1 dark:border-slate-600">/</kbd> to start typing,{" "}
-                  <kbd className="rounded border border-slate-300 px-1 dark:border-slate-600">Ctrl+K</kbd> for a new chat.
+                <p className="mt-4 text-xs text-slate-400">
+                  Tip: press <kbd className="rounded-md border border-slate-300 bg-white/60 px-1.5 py-0.5 font-sans dark:border-slate-600 dark:bg-slate-800">/</kbd> to start typing,{" "}
+                  <kbd className="rounded-md border border-slate-300 bg-white/60 px-1.5 py-0.5 font-sans dark:border-slate-600 dark:bg-slate-800">Ctrl+K</kbd> for a new chat.
                 </p>
               </div>
             </div>
@@ -549,8 +552,8 @@ export function ChatPanel({
           )}
         </div>
 
-        <div className="border-t border-slate-200 p-3 dark:border-slate-700">
-          <div className="flex items-end gap-2 rounded-xl border border-slate-300 bg-white p-2 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 dark:border-slate-600 dark:bg-slate-800 dark:focus-within:ring-indigo-900">
+        <div className="border-t border-slate-200/70 p-3 dark:border-slate-700/70">
+          <div className="flex items-end gap-2 rounded-2xl border border-slate-300/80 bg-white/70 p-2 backdrop-blur-sm transition-colors focus-within:border-[var(--hairline)] focus-within:ring-2 focus-within:ring-[var(--hairline)] dark:border-slate-600/80 dark:bg-slate-800/60 dark:focus-within:ring-[var(--hairline)]">
             <textarea
               ref={textareaRef}
               value={input}

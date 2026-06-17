@@ -1,11 +1,13 @@
 "use client";
-// Top navigation: brand, links, theme toggle, a profile link (avatar + name), and
-// logout. Icons are line-style SVGs (see icons.tsx) — no emoji.
+// Top navigation: a floating glass bar with brand, links, theme toggle, a profile
+// link (avatar + name), and logout. Icons are line-style SVGs (see icons.tsx) — no
+// emoji.
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
-import { IconGradCap, IconHome, IconChart, IconSun, IconMoon, IconLogOut } from "./icons";
+import { IconHome, IconChart, IconSun, IconMoon, IconLogOut } from "./icons";
+import { StudyMateMark } from "./StudyMateLogo";
 
 export function NavBar() {
   const { user, logout } = useAuth();
@@ -21,14 +23,14 @@ export function NavBar() {
   ];
 
   return (
-    <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
+    <header className="sticky top-0 z-30 px-3 pt-3">
+      <div className="glass-strong mx-auto flex h-14 max-w-7xl items-center justify-between rounded-2xl px-2.5 sm:px-4">
         <div className="flex items-center gap-5">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-linear-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
-              <IconGradCap size={18} />
+          <Link href="/dashboard" className="group flex items-center gap-2.5">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--btn)] text-[var(--on-btn)] shadow-md shadow-black/15 ring-1 ring-white/30 transition-transform group-hover:scale-110">
+              <StudyMateMark size={19} />
             </span>
-            <span className="text-[15px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+            <span className="font-display text-[15px] font-bold tracking-tight text-slate-900 dark:text-slate-100">
               StudyMate
             </span>
           </Link>
@@ -39,10 +41,10 @@ export function NavBar() {
                 <Link
                   key={href}
                   href={href}
-                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-colors ${
                     active
-                      ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300"
-                      : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                      ? "bg-[var(--soft)] text-[var(--primary)] ring-1 ring-inset ring-[var(--hairline)] dark:text-[var(--primary)]"
+                      : "text-slate-600 hover:bg-slate-900/5 dark:text-slate-400 dark:hover:bg-white/10"
                   }`}
                 >
                   <Icon size={16} />
@@ -52,24 +54,28 @@ export function NavBar() {
             })}
           </nav>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           <button
             onClick={toggle}
             title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+            className="grid h-9 w-9 cursor-pointer place-items-center rounded-xl text-slate-500 transition-colors hover:bg-slate-900/5 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-200"
           >
             {theme === "dark" ? <IconSun size={18} /> : <IconMoon size={18} />}
           </button>
           <Link
             href="/profile"
-            className="flex items-center gap-2 rounded-lg py-1 pl-1 pr-2.5 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="flex items-center gap-2 rounded-xl py-1 pl-1 pr-2.5 transition-colors hover:bg-slate-900/5 dark:hover:bg-white/10"
             title="Profile & settings"
           >
             {user?.picture ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.picture} alt="" className="h-7 w-7 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
+              <img
+                src={user.picture}
+                alt=""
+                className="h-7 w-7 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700"
+              />
             ) : (
-              <span className="grid h-7 w-7 place-items-center rounded-full bg-linear-to-br from-indigo-500 to-violet-600 text-xs font-semibold text-white">
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-[var(--btn)] text-xs font-semibold text-[var(--on-btn)] ring-1 ring-white/30">
                 {initials}
               </span>
             )}
@@ -83,7 +89,7 @@ export function NavBar() {
               router.replace("/login");
             }}
             title="Log out"
-            className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/50 dark:hover:text-red-400"
+            className="grid h-9 w-9 cursor-pointer place-items-center rounded-xl text-slate-500 transition-colors hover:bg-red-500/10 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400"
           >
             <IconLogOut size={18} />
           </button>

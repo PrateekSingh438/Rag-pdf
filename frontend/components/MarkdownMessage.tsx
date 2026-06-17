@@ -71,7 +71,7 @@ export function MarkdownMessage({
                 return (
                   <button
                     onClick={() => onCitation(cit)}
-                    className="mx-0.5 inline-flex items-center rounded bg-indigo-100 px-1.5 py-0.5 align-baseline text-xs font-semibold text-indigo-700 no-underline hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:hover:bg-indigo-900"
+                    className="mx-0.5 inline-flex items-center rounded bg-[var(--soft)] px-1.5 py-0.5 align-baseline text-xs font-semibold text-[var(--primary)] no-underline hover:bg-[var(--soft)] dark:bg-[var(--soft)] dark:text-[var(--primary)] dark:hover:bg-[var(--soft)]"
                   >
                     {children}
                   </button>
@@ -80,7 +80,7 @@ export function MarkdownMessage({
               return <span>{children}</span>;
             }
             return (
-              <a href={href} target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline">
+              <a href={href} target="_blank" rel="noopener noreferrer" className="text-[var(--primary)] underline">
                 {children}
               </a>
             );

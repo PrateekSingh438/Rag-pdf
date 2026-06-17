@@ -47,15 +47,15 @@ export function StudyInsightsDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-slate-900/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-40 grid place-items-center bg-slate-900/50 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[85vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-xl dark:bg-slate-800"
+        className="animate-rise flex max-h-[85vh] w-full max-w-lg flex-col rounded-2xl border border-white/50 bg-white/90 shadow-2xl backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/85"
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
           <div>
-            <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
-              <IconTarget size={18} className="text-indigo-500" /> Key topics
+            <h2 className="flex items-center gap-2 font-display text-base font-semibold text-slate-900 dark:text-slate-100">
+              <IconTarget size={18} className="text-[var(--primary)]" /> Key topics
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Highest-yield topics across your notes &amp; exams — what to study first
@@ -72,7 +72,7 @@ export function StudyInsightsDialog({
               <Spinner />
             </div>
           ) : error ? (
-            <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/50">{error}</p>
+            <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600 ring-1 ring-inset ring-red-500/20 dark:text-red-300">{error}</p>
           ) : !hasDocs ? (
             <p className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
               Upload some notes and exam papers first, then come back to see your key topics.
@@ -91,7 +91,7 @@ export function StudyInsightsDialog({
                       {t.importance} yield
                     </span>
                     {t.exam_frequency > 0 && (
-                      <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-950 dark:text-amber-300">
                         tested {t.exam_frequency}×
                       </span>
                     )}

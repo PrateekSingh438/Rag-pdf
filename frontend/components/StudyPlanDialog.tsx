@@ -47,14 +47,14 @@ export function StudyPlanDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-slate-900/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-40 grid place-items-center bg-slate-900/50 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-2xl flex-col rounded-xl bg-white shadow-xl dark:bg-slate-800"
+        className="animate-rise flex max-h-[88vh] w-full max-w-2xl flex-col rounded-2xl border border-white/50 bg-white/90 shadow-2xl backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/85"
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
-          <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
-            <IconCalendar size={18} className="text-indigo-500" /> Study plan
+          <h2 className="flex items-center gap-2 font-display text-base font-semibold text-slate-900 dark:text-slate-100">
+            <IconCalendar size={18} className="text-[var(--primary)]" /> Study plan
           </h2>
           <button onClick={onClose} title="Close" className="grid h-8 w-8 place-items-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700">
             <IconX size={16} />
@@ -89,7 +89,7 @@ export function StudyPlanDialog({
           </Button>
         </div>
 
-        {error && <p className="mx-5 mb-3 rounded bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/50">{error}</p>}
+        {error && <p className="mx-5 mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600 ring-1 ring-inset ring-red-500/20 dark:text-red-300">{error}</p>}
 
         {(busy || plan) && (
           <div className="scroll-thin flex-1 overflow-y-auto border-t border-slate-200 px-5 py-4 dark:border-slate-700">
@@ -102,7 +102,7 @@ export function StudyPlanDialog({
                   {plan!.map((d) => (
                     <li key={d.day} className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
                       <div className="mb-1 flex items-baseline gap-2">
-                        <span className="grid h-6 min-w-6 place-items-center rounded-full bg-indigo-600 px-1.5 text-xs font-bold text-white">
+                        <span className="grid h-6 min-w-6 place-items-center rounded-full bg-[var(--btn)] px-1.5 text-xs font-bold text-[var(--on-btn)]">
                           {d.day}
                         </span>
                         <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{d.focus}</span>
@@ -110,7 +110,7 @@ export function StudyPlanDialog({
                       {d.topics.length > 0 && (
                         <div className="mb-2 flex flex-wrap gap-1.5">
                           {d.topics.map((t, i) => (
-                            <span key={i} className="rounded bg-indigo-50 px-1.5 py-0.5 text-xs text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                            <span key={i} className="rounded bg-[var(--soft)] px-1.5 py-0.5 text-xs text-[var(--primary)] dark:bg-[var(--soft)] dark:text-[var(--primary)]">
                               {t}
                             </span>
                           ))}

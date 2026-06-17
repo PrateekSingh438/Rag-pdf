@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Sora } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider, themeInitScript } from "@/lib/theme";
@@ -8,6 +8,8 @@ import { ServerWaking } from "@/components/ServerWaking";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+// Display face for headings, brand and headline accents.
+const sora = Sora({ variable: "--font-sora", subsets: ["latin"], weight: ["500", "600", "700", "800"] });
 
 const SITE_URL = "https://studymatewc.vercel.app";
 const TITLE = "StudyMate — AI study companion";
@@ -34,11 +36,21 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} ${sora.variable} h-full antialiased`}
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full flex flex-col">
+        {/* Vivid animated aurora mesh behind every page (see globals.css). */}
+        <div className="aurora" aria-hidden="true">
+          <span className="b1" />
+          <span className="b2" />
+          <span className="b3" />
+          <span className="b4" />
+        </div>
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>

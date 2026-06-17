@@ -42,7 +42,7 @@ function fileToAvatarDataUrl(file: File, size = 256): Promise<string> {
 function avatarFor(name: string | null, email: string, picture: string | null) {
   if (picture) return picture;
   const label = encodeURIComponent(name || email);
-  return `https://ui-avatars.com/api/?name=${label}&background=4f46e5&color=fff&size=256`;
+  return `https://ui-avatars.com/api/?name=${label}&background=0d9488&color=fff&size=256`;
 }
 
 export default function ProfilePage() {
@@ -121,7 +121,7 @@ export default function ProfilePage() {
     <>
       <NavBar />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 pb-24">
-        <h1 className="mb-6 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+        <h1 className="mb-6 font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
           Profile &amp; settings
         </h1>
 
@@ -142,7 +142,7 @@ export default function ProfilePage() {
                 </span>
               </button>
               <div className="flex items-center gap-2">
-                <button onClick={() => fileRef.current?.click()} className="text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                <button onClick={() => fileRef.current?.click()} className="text-xs font-medium text-[var(--primary)] hover:underline dark:text-[var(--primary)]">
                   Upload
                 </button>
                 {picture && (
@@ -201,7 +201,7 @@ export default function ProfilePage() {
                       <span
                         key={b.name}
                         title={b.description}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-300"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[var(--hairline)] bg-[var(--soft)] px-3 py-1 text-sm font-medium text-[var(--primary)] dark:border-[var(--hairline)] dark:bg-[var(--soft)] dark:text-[var(--primary)]"
                       >
                         <IconAward size={14} /> {b.name}
                       </span>
@@ -254,7 +254,7 @@ function Section({ title, danger, children }: { title: string; danger?: boolean;
       <h2 className={`mb-3 text-sm font-semibold uppercase tracking-wide ${danger ? "text-red-600 dark:text-red-400" : "text-slate-500 dark:text-slate-400"}`}>
         {title}
       </h2>
-      <Card className={`p-5 ${danger ? "border-red-200 dark:border-red-900" : ""}`}>{children}</Card>
+      <Card className={`p-5 ${danger ? "ring-1 ring-inset ring-red-400/40 dark:ring-red-500/30" : ""}`}>{children}</Card>
     </section>
   );
 }
@@ -270,10 +270,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function Stat({ label, value, icon: Icon }: { label: string; value: string | number; icon?: React.ComponentType<{ size?: number; className?: string }> }) {
   return (
-    <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+    <div className="rounded-xl border border-slate-200/70 bg-white/40 p-3 backdrop-blur-sm dark:border-slate-700/60 dark:bg-white/5">
       <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 flex items-center gap-1.5 text-xl font-semibold text-slate-900 dark:text-slate-100">
-        {value}{Icon && <Icon size={18} className="text-orange-500" />}
+      <p className="mt-1 flex items-center gap-1.5 font-display text-xl font-bold text-slate-900 dark:text-slate-100">
+        {value}{Icon && <Icon size={18} className="text-[var(--primary)]" />}
       </p>
     </div>
   );
@@ -281,9 +281,9 @@ function Stat({ label, value, icon: Icon }: { label: string; value: string | num
 
 function Community({ icon: Icon, label, value }: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; value: number | undefined }) {
   return (
-    <div className="rounded-lg border border-slate-200 p-3 text-center dark:border-slate-700">
-      <Icon size={20} className="mx-auto mb-1.5 text-indigo-500" />
-      <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">{value === undefined ? "—" : value.toLocaleString()}</p>
+    <div className="rounded-xl border border-slate-200/70 bg-white/40 p-3 text-center backdrop-blur-sm dark:border-slate-700/60 dark:bg-white/5">
+      <Icon size={20} className="mx-auto mb-1.5 text-[var(--primary)]" />
+      <p className="font-display text-xl font-bold text-slate-900 dark:text-slate-100">{value === undefined ? "—" : value.toLocaleString()}</p>
       <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{label}</p>
     </div>
   );
@@ -356,9 +356,9 @@ function DangerZone({ token, onDeleted }: { token: string; onDeleted: () => void
       </Button>
 
       {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/50 p-4" onClick={() => setOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-800">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Are you absolutely sure?</h3>
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/50 p-4 backdrop-blur-sm" onClick={() => setOpen(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="animate-rise w-full max-w-md rounded-2xl border border-white/50 bg-white/90 p-6 shadow-2xl backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/85">
+            <h3 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100">Are you absolutely sure?</h3>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
               This deletes everything you&apos;ve uploaded and created. Type <strong>DELETE</strong> to confirm.
             </p>

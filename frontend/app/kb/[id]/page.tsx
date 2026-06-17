@@ -57,11 +57,11 @@ export default function KBWorkspacePage() {
       <NavBar />
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-4">
         <div className="mb-3 flex items-center gap-2 text-sm">
-          <Link href="/dashboard" className="inline-flex items-center gap-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+          <Link href="/dashboard" className="inline-flex items-center gap-1 text-slate-400 transition-colors hover:text-slate-700 dark:hover:text-slate-200">
             <IconArrowLeft size={15} /> Dashboard
           </Link>
-          <span className="text-slate-300">/</span>
-          <h1 className="font-semibold text-slate-900 dark:text-slate-100">
+          <span className="text-slate-300 dark:text-slate-600">/</span>
+          <h1 className="font-display font-semibold text-slate-900 dark:text-slate-100">
             {notFound ? "Not found" : kb?.name || "…"}
           </h1>
         </div>
@@ -73,14 +73,14 @@ export default function KBWorkspacePage() {
         ) : (
           <>
             {/* mobile-only switch between the two panels */}
-            <div className="mb-3 inline-flex self-start rounded-lg border border-slate-300 p-0.5 text-sm lg:hidden dark:border-slate-600">
+            <div className="glass mb-3 inline-flex self-start rounded-xl p-0.5 text-sm lg:hidden">
               {(["chat", "docs"] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setMobileTab(t)}
-                  className={`rounded-md px-4 py-1.5 font-medium transition-colors ${
+                  className={`cursor-pointer rounded-lg px-4 py-1.5 font-medium transition-all ${
                     mobileTab === t
-                      ? "bg-indigo-600 text-white"
+                      ? "bg-[var(--btn)] text-[var(--on-btn)] shadow-sm shadow-black/15"
                       : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
                   }`}
                 >

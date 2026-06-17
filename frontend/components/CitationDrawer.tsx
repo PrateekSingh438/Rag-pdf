@@ -45,25 +45,25 @@ export function CitationDrawer({
     <>
       <div
         onClick={onClose}
-        className={`fixed inset-0 z-30 bg-slate-900/30 transition-opacity ${
+        className={`fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm transition-opacity ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
       <aside
-        className={`fixed right-0 top-0 z-40 flex h-full w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-xl transition-transform dark:border-slate-700 dark:bg-slate-800 ${
+        className={`fixed right-0 top-0 z-40 flex h-full w-full max-w-md flex-col border-l border-white/40 bg-white/90 shadow-2xl backdrop-blur-xl transition-transform dark:border-slate-700/60 dark:bg-slate-900/85 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {citation && (
           <>
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+            <div className="flex items-center justify-between border-b border-slate-200/70 px-5 py-4 dark:border-slate-700/70">
               <div className="flex items-center gap-2">
-                <span className="rounded-md bg-indigo-600 px-2 py-0.5 text-xs font-bold text-white">
+                <span className="rounded-md bg-[var(--btn)] px-2 py-0.5 text-xs font-bold text-[var(--on-btn)] shadow-sm shadow-black/15">
                   {citation.tag}
                 </span>
-                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Source detail</h2>
+                <h2 className="font-display text-sm font-semibold text-slate-900 dark:text-slate-100">Source detail</h2>
               </div>
-              <button onClick={onClose} title="Close" className="grid h-8 w-8 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700">
+              <button onClick={onClose} title="Close" className="grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-900/5 hover:text-slate-700 dark:hover:bg-white/10">
                 <IconX size={16} />
               </button>
             </div>
@@ -80,7 +80,7 @@ export function CitationDrawer({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Type</span>
-                  <Badge className={citation.doc_type === "exam" ? "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300" : "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"}>
+                  <Badge className={citation.doc_type === "exam" ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" : "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"}>
                     {citation.doc_type ?? "notes"}
                   </Badge>
                 </div>
