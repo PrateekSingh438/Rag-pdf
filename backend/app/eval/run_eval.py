@@ -23,13 +23,16 @@ import numpy as np
 
 from ..config import settings
 from ..rag.chunker import chunk_document
-from ..rag.store import embed, embed_query
+from ..rag.store import embed, embed_query, contextual_text
 from ..rag.reranker import rerank
+from ..rag.retriever import _select_diverse
 from ..rag.generator import build_messages
 from .corpus import CORPUS
 
-# Retrieval settings for the eval (top_k is the "k" in the metrics).
-TOP_N = 10
+# Retrieval settings for the eval (top_k is the "k" in the metrics). top_n
+# mirrors the production wide-pool-then-rerank setting so the eval measures the
+# real pipeline.
+TOP_N = settings.retrieve_candidates
 TOP_K = 3
 # Ablation grid. Sizes must stay inside the embedder/reranker 512-TOKEN windows
 # (~220 words max), otherwise the models silently truncate and the comparison
@@ -69,7 +72,8 @@ def build_index(chunk_size: int):
         pages = [{"page": 1, "text": meta["text"]}]
         chunks = chunk_document(pages, fname, meta["doc_type"], chunk_size=chunk_size)
         gold_counts[fname] = len(chunks)
-        for c, vec in zip(chunks, embed([c["text"] for c in chunks])):
+        ctx = [contextual_text(c["text"], c["metadata"]) for c in chunks]
+        for c, vec in zip(chunks, embed(ctx)):
             items.append({"id": f"{doc_id}_{c['metadata']['chunk_index']}",
                           "text": c["text"],
                           "metadata": {**c["metadata"], "doc_id": doc_id}})
@@ -87,7 +91,11 @@ def search(index, query: str, use_reranker: bool):
     order = np.argsort(-sims)[:TOP_N]
     hits = [{"id": items[i]["id"], "text": items[i]["text"],
              "metadata": items[i]["metadata"], "score": float(sims[i])} for i in order]
-    return rerank(query, hits, top_k=TOP_K) if use_reranker else hits[:TOP_K]
+    if not use_reranker:
+        return hits[:TOP_K]
+    # Rerank the whole pool then pick a diverse top_k — same as production.
+    ranked = rerank(query, hits, top_k=len(hits))
+    return _select_diverse(ranked, TOP_K)
 
 
 def retrieval_metrics(index, gold_counts, dataset, use_reranker):

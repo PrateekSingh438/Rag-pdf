@@ -187,4 +187,172 @@ CORPUS: dict[str, dict] = {
             "compactness and cache performance matter and the load factor can be kept low."
         ),
     },
+    "stacks.pdf": {
+        "doc_type": "notes",
+        "text": (
+            "Stacks. A stack is a last-in, first-out (LIFO) collection that supports two main "
+            "operations in O(1) time: push, which adds an element to the top, and pop, which "
+            "removes and returns the most recently added element. Only the top is accessible — "
+            "there is no way to reach an element in the middle without removing the ones above "
+            "it. A stack is typically built on a dynamic array or a singly linked list, and it "
+            "keeps no ordering beyond insertion recency. Stacks model any process that must "
+            "unwind in reverse order: the function call stack that tracks return addresses and "
+            "local variables, the undo history in an editor, balanced-parenthesis and "
+            "expression evaluation, and the explicit frontier of an iterative depth-first "
+            "search. Because access is restricted to one end, a stack is the wrong choice when "
+            "you need to inspect or remove the oldest item, scan arbitrary positions, or keep "
+            "elements sorted. Its strength is exactly that restriction: the LIFO discipline "
+            "makes reasoning about nesting and backtracking simple and the operations trivially "
+            "constant time."
+        ),
+    },
+    "queues.pdf": {
+        "doc_type": "notes",
+        "text": (
+            "Queues. A queue is a first-in, first-out (FIFO) collection: elements are enqueued "
+            "at the rear and dequeued from the front, both in O(1) time, so the item that has "
+            "waited longest is always served next. Unlike a stack, which touches only one end, "
+            "a queue uses both ends — insert at the back, remove at the front — and is commonly "
+            "implemented as a circular buffer over an array or as a linked list with head and "
+            "tail pointers. Queues model fairness and ordering over time: task and request "
+            "scheduling, print spooling, buffering between a fast producer and a slow consumer, "
+            "and the frontier of a breadth-first search, which must expand nodes in the order "
+            "they were discovered. A queue is the wrong structure when you need last-in-first-"
+            "out unwinding, random access by position, or priority ordering — for always "
+            "serving the most important rather than the oldest item, a priority queue backed by "
+            "a heap is used instead. The defining property is temporal fairness: whoever "
+            "arrived first leaves first."
+        ),
+    },
+    "red_black_trees.pdf": {
+        "doc_type": "notes",
+        "text": (
+            "Red-Black Trees. A red-black tree is a self-balancing binary search tree that keeps "
+            "the same left-smaller, right-larger ordering invariant but enforces balance through "
+            "node colors rather than strict subtree heights. Each node is red or black, the root "
+            "and leaves are black, a red node may not have a red child, and every root-to-leaf "
+            "path contains the same number of black nodes; these rules bound the longest path at "
+            "no more than twice the shortest, keeping height O(log n). After an insertion or "
+            "deletion the tree restores the invariants with recoloring and a small number of "
+            "rotations. Compared with an AVL tree, a red-black tree balances more loosely, so it "
+            "is taller and its lookups are slightly slower, but it performs fewer rotations on "
+            "updates, which makes inserts and deletes faster — the reason it backs many standard-"
+            "library ordered maps and sets, such as C++ std::map and Java TreeMap. Choose a red-"
+            "black tree when updates are frequent and you want guaranteed O(log n) operations "
+            "with less rebalancing overhead than AVL; choose AVL when lookups dominate and you "
+            "want the shallowest possible tree."
+        ),
+    },
+    "heapsort.pdf": {
+        "doc_type": "notes",
+        "text": (
+            "Heapsort. Heapsort is a comparison sort that first builds a binary heap from the "
+            "input array in O(n) time and then repeatedly extracts the maximum, swapping it to "
+            "the end and shrinking the heap, until the array is sorted. Because the heap lives "
+            "inside the same array, heapsort sorts in place, needing only O(1) extra space, and "
+            "it guarantees O(n log n) time in the best, average, and worst cases — combining "
+            "quicksort's in-place memory profile with merge sort's worst-case guarantee. Its "
+            "drawbacks are that it is not stable, so equal elements can be reordered, and its "
+            "scattered, non-sequential access pattern gives poorer cache locality than "
+            "quicksort, so in practice it is often slower despite the same asymptotic bound. "
+            "Heapsort is the right choice when you need a strict O(n log n) worst case and "
+            "cannot afford the auxiliary array that merge sort requires; it is also closely tied "
+            "to the priority queue, since both are powered by the heap. It is a poor choice when "
+            "stability matters or when average-case speed and cache behavior are the priority."
+        ),
+    },
+    "insertion_sort.pdf": {
+        "doc_type": "notes",
+        "text": (
+            "Insertion Sort. Insertion sort builds the sorted result one element at a time: it "
+            "scans from left to right and, for each new element, slides it backward into its "
+            "correct place among the already-sorted prefix. It runs in O(n squared) time in the "
+            "average and worst cases, which makes it unsuitable for large random inputs, but it "
+            "has redeeming qualities the fast divide-and-conquer sorts lack. It is in place, "
+            "needing only O(1) extra space; it is stable, preserving the order of equal keys; "
+            "and it is adaptive, running in nearly O(n) time when the input is already almost "
+            "sorted, because few shifts are needed. Its simplicity and low constant factors make "
+            "it faster than quicksort or merge sort on very small arrays, which is why optimized "
+            "library sorts switch to insertion sort for small subproblems. Choose insertion sort "
+            "for small or nearly-sorted data, or as the base case inside a larger sort; avoid it "
+            "as a general-purpose sort for large, unordered inputs, where an O(n log n) "
+            "algorithm wins decisively."
+        ),
+    },
+    "graph_bfs.pdf": {
+        "doc_type": "notes",
+        "text": (
+            "Breadth-First Search. Breadth-first search (BFS) explores a graph level by level: "
+            "starting from a source vertex it visits all immediate neighbors, then their "
+            "neighbors, and so on, using a FIFO queue to hold the frontier of discovered-but-"
+            "unexpanded vertices and a visited set to avoid revisiting. Because it expands "
+            "vertices in order of increasing distance, BFS finds the shortest path in an "
+            "unweighted graph — the first time it reaches a vertex is along a path with the "
+            "fewest edges. It runs in O(V + E) time on an adjacency list. BFS is the right tool "
+            "for shortest-hop problems, finding connected components, testing bipartiteness, and "
+            "any search where the goal is likely close to the source. It contrasts with depth-"
+            "first search, which plunges deep along one path before backtracking and uses a "
+            "stack; BFS instead stays shallow and wide. Its cost is memory: the queue can hold a "
+            "whole level, which in a wide graph is a large fraction of the vertices, so BFS can "
+            "use much more memory than a depth-first traversal of the same graph."
+        ),
+    },
+    "graph_dfs.pdf": {
+        "doc_type": "notes",
+        "text": (
+            "Depth-First Search. Depth-first search (DFS) explores a graph by going as deep as "
+            "possible along each branch before backtracking: from a vertex it follows one edge "
+            "to an unvisited neighbor, repeats, and only when it gets stuck does it back up to "
+            "the most recent vertex with unexplored edges. It is naturally expressed with "
+            "recursion or an explicit LIFO stack, plus a visited set, and runs in O(V + E) "
+            "time. Unlike breadth-first search, DFS does not find shortest paths in general, but "
+            "its deep, backtracking order makes it the engine for a different family of "
+            "problems: detecting cycles, producing a topological ordering of a directed acyclic "
+            "graph, finding strongly connected components, and exhaustively enumerating paths. "
+            "Its memory use is proportional to the longest path (the recursion or stack depth), "
+            "which is typically far smaller than the wide frontier a breadth-first search must "
+            "store, though very deep graphs risk stack overflow. Choose DFS for connectivity, "
+            "ordering, and backtracking tasks; choose breadth-first search when you need the "
+            "fewest-edge path or are searching near the source."
+        ),
+    },
+    "tries.pdf": {
+        "doc_type": "notes",
+        "text": (
+            "Tries. A trie, or prefix tree, stores a set of strings by their characters: each "
+            "edge is labeled with a character and each path from the root spells a prefix, so "
+            "all keys sharing a prefix share the same initial path and a node marks where a "
+            "complete word ends. Lookup, insertion, and deletion of a key take time proportional "
+            "to the length of the key, independent of how many keys are stored, and the trie "
+            "supports operations a hash table cannot do efficiently: listing all words with a "
+            "given prefix, autocomplete, and ordered traversal of the keys. Unlike a binary "
+            "search tree, a trie branches on characters rather than whole-key comparisons, and "
+            "unlike a hash table it never computes a hash or suffers collisions. The cost is "
+            "memory: each node may hold many child pointers, one per possible character, so a "
+            "sparse trie can waste a great deal of space, which compressed variants like radix "
+            "trees mitigate. Choose a trie for prefix queries, dictionary and autocomplete "
+            "features, and string-keyed lookups where shared prefixes are common; avoid it when "
+            "keys are long and unrelated and memory is tight."
+        ),
+    },
+    "bloom_filters.pdf": {
+        "doc_type": "notes",
+        "text": (
+            "Bloom Filters. A Bloom filter is a space-efficient probabilistic data structure "
+            "that tests whether an element is a member of a set. It is a bit array combined with "
+            "several independent hash functions; to insert an element you hash it with each "
+            "function and set the corresponding bits, and to query you check whether all those "
+            "bits are set. Its defining trade-off is one-sided error: a Bloom filter can produce "
+            "false positives — reporting that an absent element is present because its bits "
+            "happened to be set by others — but it never produces false negatives, so a 'not "
+            "present' answer is always correct. It stores no actual keys, only bits, so it uses "
+            "far less memory than a hash table, at the price of not being able to retrieve "
+            "elements or, in the standard form, delete them. The false-positive rate rises as "
+            "more elements are added and is tuned by choosing the bit-array size and number of "
+            "hash functions. Bloom filters are used as a cheap front-line check before an "
+            "expensive lookup — for example to avoid disk reads for keys that are definitely "
+            "absent. Choose one when approximate membership in little memory is acceptable; "
+            "avoid it when you need exact answers or must enumerate or remove elements."
+        ),
+    },
 }

@@ -28,6 +28,22 @@ def embed(texts):
     return _embedder.encode(texts, normalize_embeddings=True).tolist()
 
 
+def contextual_text(text: str, metadata: dict) -> str:
+    """Anthropic-style contextual embeddings (lite). Prepend a short source
+    descriptor (document title + page) so a chunk whose wording is locally
+    generic ("this runs in O(n)") still carries document-level context into its
+    vector — which is what lets retrieval tell two similar passages apart. Free:
+    no extra LLM call, unlike Anthropic's per-chunk generated context. Only the
+    EMBEDDED text is contextualized; the stored/displayed text stays raw, so
+    citations and the prompt are unaffected. Queries are embedded bare."""
+    if not settings.contextual_embeddings:
+        return text
+    title = metadata["source_file"].rsplit(".", 1)[0].replace("_", " ").strip()
+    page = metadata.get("page")
+    prefix = f"{title}, page {page}. " if page else f"{title}. "
+    return prefix + text
+
+
 def embed_query(query: str):
     prefix = _QUERY_PREFIX if "bge" in settings.embed_model.lower() else ""
     return _embedder.encode([prefix + query], normalize_embeddings=True).tolist()[0]
@@ -39,7 +55,8 @@ def _meta(c: Chunk) -> dict:
 
 
 def add_chunks(kb_id: int, doc_id: int, chunks):
-    embeddings = embed([c["text"] for c in chunks])
+    # Embed the contextualized text (doc title + page + chunk); store raw text.
+    embeddings = embed([contextual_text(c["text"], c["metadata"]) for c in chunks])
     db = SessionLocal()
     try:
         for c, emb in zip(chunks, embeddings):

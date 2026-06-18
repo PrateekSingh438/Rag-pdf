@@ -19,6 +19,21 @@ class Settings(BaseSettings):
     # clearly-irrelevant pairs ~-10; on-topic pairs sit well above). An empty
     # result then means "answer honestly: not found" without burning an LLM call.
     rerank_score_floor: float = -8.0
+    # Retrieval pool sizes. We cast a WIDE net (retrieve_candidates) so the
+    # accurate-but-slow cross-encoder has real choices, then compress to the few
+    # chunks (retrieve_top_k) that go in the prompt. Reranking is a refinement
+    # step, so a bigger candidate pool reliably improves the final ranking; 40 is
+    # well within the cross-encoder's latency budget for a chat app.
+    retrieve_candidates: int = 40
+    retrieve_top_k: int = 5
+    # Diversity floor: drop a reranked chunk when its word-overlap (Jaccard) with
+    # an already-selected chunk exceeds this, so the top_k carry distinct info
+    # instead of restating one passage. Conservative — only near-duplicates go.
+    dedup_jaccard: float = 0.8
+    # Contextual embeddings (Anthropic-style, lite): prepend a short source
+    # descriptor to each chunk before embedding so locally-generic text carries
+    # document-level context into the vector. Display/citations use raw text.
+    contextual_embeddings: bool = True
     # Agentic self-check: verify each answer's claims against its sources after
     # streaming (one extra fast-model call; +1 revision call only on failure).
     self_check: bool = True

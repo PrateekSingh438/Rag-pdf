@@ -106,5 +106,413 @@
     "ideal_answer": "Open addressing, which requires empty slots for probing to terminate and tombstones so probe sequences survive deletion.",
     "gold_doc": "hashing_open_addressing.pdf",
     "needs_human_review": true
+  },
+  {
+    "question": "Why is appending to the end usually cheap even though a single append can occasionally cost O(n)?",
+    "ideal_answer": "A dynamic array grows by doubling and copying, which spreads the cost so appends are amortized O(1) despite the occasional O(n) resize.",
+    "gold_doc": "dynamic_arrays.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which container do languages typically surface as a vector, an ArrayList, or a list?",
+    "ideal_answer": "A dynamic array, exposed under names like vector, ArrayList, or list.",
+    "gold_doc": "dynamic_arrays.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "For tight numerical loops doing lots of random reads by index, which structure offers the best cache behavior?",
+    "ideal_answer": "A dynamic array: contiguous storage and direct index arithmetic give O(1) reads and excellent cache locality.",
+    "gold_doc": "dynamic_arrays.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure carries no per-element overhead, storing just the values in one compact block?",
+    "ideal_answer": "A dynamic array, which stores only the values contiguously with no per-element pointer overhead.",
+    "gold_doc": "dynamic_arrays.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which variant carries a backward pointer so a known node can be deleted in O(1) without first scanning for its predecessor?",
+    "ideal_answer": "A doubly linked list, whose backward pointers let a known node be removed without finding its predecessor first.",
+    "gold_doc": "linked_lists.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure suffers poor cache locality because its elements are scattered across memory instead of being contiguous?",
+    "ideal_answer": "A linked list, whose nodes are scattered (not contiguous), giving poor cache locality.",
+    "gold_doc": "linked_lists.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "In which structure is a single reference to the first element the only entry point?",
+    "ideal_answer": "A linked list, where the head reference is the only way into the structure.",
+    "gold_doc": "linked_lists.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure shines when the workload is dominated by insertions and removals at the ends or at already-known positions?",
+    "ideal_answer": "A linked list, which splices in O(1) at known positions, making it ideal for insertion/deletion-heavy workloads.",
+    "gold_doc": "linked_lists.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which ordered tree has no balancing mechanism of its own, so its shape depends entirely on the order keys were inserted?",
+    "ideal_answer": "A plain binary search tree, which does not self-balance, so its shape and performance depend on insertion order.",
+    "gold_doc": "binary_search_trees.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Feeding keys in already-sorted order into which tree yields a degenerate, list-like structure?",
+    "ideal_answer": "A plain binary search tree, which becomes skewed (list-like, O(n)) when keys arrive sorted.",
+    "gold_doc": "binary_search_trees.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure is best understood as the unbalanced baseline that self-balancing trees improve upon?",
+    "ideal_answer": "A plain binary search tree, the unbalanced baseline that AVL and other self-balancing trees improve on.",
+    "gold_doc": "binary_search_trees.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "In which tree may the heights of any node's left and right subtrees differ by at most one?",
+    "ideal_answer": "An AVL tree, whose height-balance condition keeps each node's subtree heights within one of each other.",
+    "gold_doc": "avl_trees.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which tree does extra rotation work on every update, making it slightly slower on write-heavy workloads?",
+    "ideal_answer": "An AVL tree, which performs rotations on inserts/deletes to stay strictly balanced, costing extra work on writes.",
+    "gold_doc": "avl_trees.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure guarantees logarithmic operations even when the data arrives in sorted or adversarial order?",
+    "ideal_answer": "An AVL tree, whose self-balancing rotations guarantee worst-case O(log n) regardless of input order.",
+    "gold_doc": "avl_trees.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "In which array-backed tree do the children of index i sit at positions 2i+1 and 2i+2?",
+    "ideal_answer": "A binary heap, a complete tree stored in an array where index i's children are at 2i+1 and 2i+2.",
+    "gold_doc": "binary_heaps.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure is the engine behind heapsort and the usual implementation of a priority queue?",
+    "ideal_answer": "A binary heap, which underlies heapsort and is the standard priority-queue implementation.",
+    "gold_doc": "binary_heaps.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which tree orders each parent only against its own children, so an in-order walk of it is meaningless?",
+    "ideal_answer": "A binary heap, which only enforces the parent-child heap property and has no meaningful in-order ordering.",
+    "gold_doc": "binary_heaps.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which complete tree lets you read the current minimum in O(1) but pays O(log n) to insert or extract it?",
+    "ideal_answer": "A binary heap: the root min/max is O(1) to read, while insert and extract are O(log n) as elements sift.",
+    "gold_doc": "binary_heaps.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which sort defuses its quadratic worst case by randomizing the pivot or using the median-of-three rule?",
+    "ideal_answer": "Quicksort, whose worst case is made unlikely by pivot randomization or median-of-three selection.",
+    "gold_doc": "quicksort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which divide-and-conquer sort partitions the data around a chosen element rather than merging sorted halves?",
+    "ideal_answer": "Quicksort, which sorts by partitioning around a pivot instead of merging sorted halves.",
+    "gold_doc": "quicksort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which sort is preferable when memory is tight and average-case speed matters more than worst-case guarantees?",
+    "ideal_answer": "Quicksort, the in-place choice when memory is constrained and average speed beats worst-case guarantees.",
+    "gold_doc": "quicksort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which in-place sort needs only about O(log n) stack space and no large auxiliary array?",
+    "ideal_answer": "Quicksort, which sorts in place using only O(log n) recursion stack space and no big auxiliary array.",
+    "gold_doc": "quicksort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which sort combines two already-sorted halves by repeatedly taking the smaller of the two front elements?",
+    "ideal_answer": "Merge sort, whose merge step repeatedly takes the smaller front element of the two sorted halves.",
+    "gold_doc": "merge_sort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which comparison sort adapts well to data too large for memory and to linked lists, needing no random access?",
+    "ideal_answer": "Merge sort, which works for external (out-of-memory) data and linked lists because merging needs no random access.",
+    "gold_doc": "merge_sort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which sort delivers a dependable worst-case bound and keeps equal keys in order, provided you can spare linear extra space?",
+    "ideal_answer": "Merge sort: guaranteed O(n log n) and stable, at the cost of an O(n) auxiliary array.",
+    "gold_doc": "merge_sort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which divide-and-conquer sort is stable because, on ties, its merge step takes from the left half first?",
+    "ideal_answer": "Merge sort, which preserves the order of equal elements by favoring the left half on ties during merging.",
+    "gold_doc": "merge_sort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which collision strategy tolerates a mediocre hash function and degrades gracefully as its lists grow?",
+    "ideal_answer": "Separate chaining, which stays workable under a poor hash function and high load, degrading gradually as chains lengthen.",
+    "gold_doc": "hashing_chaining.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which approach spends extra memory on list nodes and pointers and has worse cache locality than storing entries directly in the table?",
+    "ideal_answer": "Separate chaining, whose per-bucket lists add node/pointer overhead and hurt cache locality versus in-table storage.",
+    "gold_doc": "hashing_chaining.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "When deletions are frequent, which collision scheme handles them simply by removing an entry from a bucket's list?",
+    "ideal_answer": "Separate chaining, where deletion just removes the entry from its bucket's list — no tombstones needed.",
+    "gold_doc": "hashing_chaining.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which collision strategy finds a free slot using linear probing, quadratic probing, or double hashing?",
+    "ideal_answer": "Open addressing, which resolves collisions by probing other slots via linear, quadratic, or double hashing.",
+    "gold_doc": "hashing_open_addressing.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which approach keeps every entry inside the array itself, giving excellent cache locality and no pointer overhead?",
+    "ideal_answer": "Open addressing, which stores entries directly in the array for great cache locality and zero pointer overhead.",
+    "gold_doc": "hashing_open_addressing.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Why must this collision scheme keep its load factor well below one for its probe sequences to terminate?",
+    "ideal_answer": "Open addressing needs empty slots so probing can stop, so its load factor must stay well below one and it resizes as it fills.",
+    "gold_doc": "hashing_open_addressing.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which collection only lets you touch the most recently added item, removing things in the reverse of the order they went in?",
+    "ideal_answer": "A stack, a last-in-first-out collection where only the top element is accessible.",
+    "gold_doc": "stacks.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure backs the function call stack and an editor's undo history?",
+    "ideal_answer": "A stack, whose LIFO order models call frames and undo.",
+    "gold_doc": "stacks.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which O(1) collection supports just push and pop at a single end?",
+    "ideal_answer": "A stack, which pushes and pops only at its top.",
+    "gold_doc": "stacks.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure holds the frontier of an iterative depth-first search?",
+    "ideal_answer": "A stack, used as the LIFO frontier of an iterative DFS.",
+    "gold_doc": "stacks.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which collection always serves whichever item has been waiting the longest?",
+    "ideal_answer": "A queue, a first-in-first-out collection that serves the oldest waiting item next.",
+    "gold_doc": "queues.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure inserts at the rear and removes from the front, often implemented as a circular buffer?",
+    "ideal_answer": "A queue, which enqueues at the rear and dequeues at the front, commonly as a circular buffer.",
+    "gold_doc": "queues.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure buffers work between a fast producer and a slow consumer while preserving arrival order?",
+    "ideal_answer": "A queue, whose FIFO order preserves arrival order when buffering producer/consumer work.",
+    "gold_doc": "queues.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure holds the frontier of a breadth-first search?",
+    "ideal_answer": "A queue, used as the FIFO frontier of a BFS.",
+    "gold_doc": "queues.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which self-balancing search tree enforces balance with node colors rather than strict subtree heights?",
+    "ideal_answer": "A red-black tree, which uses red/black coloring rules instead of an explicit height-balance condition.",
+    "gold_doc": "red_black_trees.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which ordered tree performs fewer rotations per update than AVL, trading slightly slower lookups for faster inserts and deletes?",
+    "ideal_answer": "A red-black tree, which balances more loosely than AVL, so it rotates less on updates.",
+    "gold_doc": "red_black_trees.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which balanced search tree backs standard-library ordered maps such as C++ std::map and Java TreeMap?",
+    "ideal_answer": "A red-black tree, the usual implementation behind library ordered maps and sets.",
+    "gold_doc": "red_black_trees.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "In which tree must every root-to-leaf path contain the same number of black nodes, with no red node having a red child?",
+    "ideal_answer": "A red-black tree, whose invariants include equal black-height per path and no red-red parent-child.",
+    "gold_doc": "red_black_trees.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which sorting algorithm repeatedly removes the maximum from a heap to place elements in order, sorting in place with a guaranteed worst case?",
+    "ideal_answer": "Heapsort, which builds a heap and repeatedly extracts the max, in place and O(n log n) worst case.",
+    "gold_doc": "heapsort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which O(n log n) sort needs only O(1) extra space yet is not stable and has poor cache locality?",
+    "ideal_answer": "Heapsort, which is in-place and worst-case O(n log n) but unstable with scattered memory access.",
+    "gold_doc": "heapsort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which sort gives quicksort's in-place memory profile together with merge sort's worst-case guarantee?",
+    "ideal_answer": "Heapsort, combining in-place sorting with a guaranteed O(n log n) worst case.",
+    "gold_doc": "heapsort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which sort is often slower in practice than quicksort despite the same asymptotic bound, because of its non-sequential access pattern?",
+    "ideal_answer": "Heapsort, whose scattered access gives worse cache locality than quicksort.",
+    "gold_doc": "heapsort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which simple sort runs in nearly linear time on almost-sorted data and is used for small subarrays inside bigger sorts?",
+    "ideal_answer": "Insertion sort, which is adaptive (near O(n) on nearly-sorted input) and used as a small-case base.",
+    "gold_doc": "insertion_sort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which O(n squared) sort builds a sorted prefix by sliding each new element back into place, and is both stable and in place?",
+    "ideal_answer": "Insertion sort, which inserts each element into the sorted prefix; stable and in-place.",
+    "gold_doc": "insertion_sort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which sort do optimized libraries switch to for very small arrays because of its low constant factors?",
+    "ideal_answer": "Insertion sort, preferred on tiny arrays for its small constants.",
+    "gold_doc": "insertion_sort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which quadratic sort is adaptive, stable, and needs only constant extra space?",
+    "ideal_answer": "Insertion sort, which is adaptive on nearly-sorted data, stable, and O(1) space.",
+    "gold_doc": "insertion_sort.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which graph traversal finds the fewest-edge path in an unweighted graph by exploring level by level?",
+    "ideal_answer": "Breadth-first search, which expands by distance and so finds shortest unweighted paths.",
+    "gold_doc": "graph_bfs.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which traversal uses a FIFO queue for its frontier and visits vertices in order of increasing distance from the source?",
+    "ideal_answer": "Breadth-first search, which uses a queue and visits in distance order.",
+    "gold_doc": "graph_bfs.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which graph search can use a lot of memory because its frontier may hold an entire level of vertices?",
+    "ideal_answer": "Breadth-first search, whose level-wide frontier can be a large fraction of the vertices.",
+    "gold_doc": "graph_bfs.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which traversal is best when the goal is likely close to the source and you want the smallest hop count?",
+    "ideal_answer": "Breadth-first search, ideal for nearby goals and fewest-edge paths.",
+    "gold_doc": "graph_bfs.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which graph traversal plunges deep along one branch and backtracks, using recursion or a stack?",
+    "ideal_answer": "Depth-first search, which goes deep then backtracks, using a stack or recursion.",
+    "gold_doc": "graph_dfs.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which traversal produces a topological ordering and detects cycles in a directed graph?",
+    "ideal_answer": "Depth-first search, used for topological sort and cycle detection.",
+    "gold_doc": "graph_dfs.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which graph search uses memory proportional to the longest path rather than the width of a level?",
+    "ideal_answer": "Depth-first search, whose memory is the recursion/stack depth (longest path).",
+    "gold_doc": "graph_dfs.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which traversal finds strongly connected components and risks stack overflow on very deep graphs?",
+    "ideal_answer": "Depth-first search, used for strongly connected components and bounded by stack depth.",
+    "gold_doc": "graph_dfs.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure stores strings by their characters so all keys sharing a prefix share the same initial path?",
+    "ideal_answer": "A trie (prefix tree), which branches on characters so shared prefixes share a path.",
+    "gold_doc": "tries.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure efficiently answers autocomplete and 'all words with this prefix' queries that a hash table cannot?",
+    "ideal_answer": "A trie, which supports prefix listing and autocomplete that hashing cannot do efficiently.",
+    "gold_doc": "tries.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "In which structure does a lookup take time proportional to the key's length, with no hashing and no collisions?",
+    "ideal_answer": "A trie, where operations cost O(key length) and there is no hashing or collision.",
+    "gold_doc": "tries.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which string structure can waste a lot of memory because each node may hold one child pointer per possible character?",
+    "ideal_answer": "A trie, whose per-character child pointers make a sparse trie memory-hungry.",
+    "gold_doc": "tries.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which probabilistic structure can give false positives but never false negatives when testing set membership?",
+    "ideal_answer": "A Bloom filter, which has one-sided error: possible false positives, never false negatives.",
+    "gold_doc": "bloom_filters.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which structure tests membership using a bit array and several hash functions, storing no actual keys?",
+    "ideal_answer": "A Bloom filter, a bit array plus multiple hash functions that stores only bits.",
+    "gold_doc": "bloom_filters.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which space-efficient structure is used as a cheap pre-check to avoid expensive lookups for absent keys?",
+    "ideal_answer": "A Bloom filter, used as a front-line membership check before a costly lookup.",
+    "gold_doc": "bloom_filters.pdf",
+    "needs_human_review": true
+  },
+  {
+    "question": "Which membership structure cannot, in its standard form, delete elements or enumerate what it contains?",
+    "ideal_answer": "A Bloom filter, which in its standard form supports neither deletion nor enumeration.",
+    "gold_doc": "bloom_filters.pdf",
+    "needs_human_review": true
   }
 ]

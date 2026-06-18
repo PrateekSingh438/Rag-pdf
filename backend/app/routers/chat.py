@@ -126,7 +126,7 @@ def chat_endpoint(request: Request, kb_id: int, payload: dict, db: Session = Dep
                for m in prior[-6:]]
     retrieval_query = _retrieval_query(question, prior)
 
-    hits = retrieve(kb_id, retrieval_query, top_n=10, top_k=5, use_reranker=True)
+    hits = retrieve(kb_id, retrieval_query, use_reranker=True)
     citations = citations_from_hits(hits)
     messages = build_messages(question, hits, history=history)
 
