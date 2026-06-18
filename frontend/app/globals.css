@@ -12,7 +12,7 @@
   --background: #fbfbfd;
   --foreground: #1d1d1f;
 
-  --muted-foreground: #6e6e73;
+  --muted-foreground: #5c5c61;
 
   --surface: #ffffff;
   --glass: rgba(255, 255, 255, 0.72);
@@ -82,8 +82,8 @@
   --lp-card: #ffffff;
   --lp-card-2: #f4f4f6;
   --lp-fg: #1d1d1f;
-  --lp-muted: #6e6e73;
-  --lp-eyebrow: #86868b;
+  --lp-muted: #5c5c61;
+  --lp-eyebrow: #6e6e73;
   --lp-hair: rgba(0, 0, 0, 0.1);
   --lp-soft: rgba(0, 0, 0, 0.05);
   --lp-bubble: #1d1d1f;
