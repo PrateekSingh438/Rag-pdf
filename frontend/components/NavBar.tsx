@@ -3,7 +3,7 @@
 // link (avatar + name), and logout. Icons are line-style SVGs (see icons.tsx) — no
 // emoji.
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { IconHome, IconChart, IconSun, IconMoon, IconLogOut } from "./icons";
@@ -12,7 +12,6 @@ import { StudyMateMark } from "./StudyMateLogo";
 export function NavBar() {
   const { user, logout } = useAuth();
   const { theme, toggle } = useTheme();
-  const router = useRouter();
   const pathname = usePathname();
 
   const initials = (user?.name || user?.email || "?").trim()[0]?.toUpperCase() ?? "?";
@@ -86,7 +85,10 @@ export function NavBar() {
           <button
             onClick={() => {
               logout();
-              router.replace("/login");
+              // Hard redirect (not router.replace): a full reload wipes all
+              // in-memory state and re-hydrates with no token, so there's no way
+              // a cached/back-button view can keep you "logged in".
+              window.location.href = "/login";
             }}
             title="Log out"
             className="grid h-9 w-9 cursor-pointer place-items-center rounded-xl text-slate-500 transition-colors hover:bg-red-500/10 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400"
